@@ -1,0 +1,17 @@
+{
+  "name": "geo-grid",
+  "version": "0.1.0",
+  "description": "Geo Grid is a maplibre-gl-js plugin for displaying customizable geographic grid on the map.",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "falseinput",
+  "license": "MIT",
+  "devDependencies": {
+    "rollup": "4.25.0",
+    "rollup-plugin-typescript": "1.0.1"
+  }
+}
