@@ -14,7 +14,8 @@ export class GeoGrid {
     private config = {
         parallersLayerName: `${PLUGIN_PREFIX}_parallers`,
         parallersSourceName: `${PLUGIN_PREFIX}_parallers_source`,
-        parallersStep: (zoomLevel: number) => 40 / Math.pow(Math.floor(zoomLevel) + 1, 2)
+        parallersStep: (zoomLevel: number) => 40 / Math.pow(Math.floor(zoomLevel) + 1, 2),
+        formatLabels: formatDegrees
     };
     private elements: Elements = {
         labels: [],
@@ -46,7 +47,6 @@ export class GeoGrid {
             }
         });
 
-
         this.map.addLayer({
             id: this.config.parallersLayerName,
             type: 'line',
@@ -62,10 +62,10 @@ export class GeoGrid {
             const southY = this.map.project([0, -currentLattitude]).y;
 
             const elements = [
-                createLabelElement(currentLattitude, 0, northY, 'left'),
-                createLabelElement(-currentLattitude, 0, southY, 'left'),
-                createLabelElement(currentLattitude, 0, northY, 'right'),
-                createLabelElement(-currentLattitude, 0, southY, 'right'),
+                createLabelElement(currentLattitude, 0, northY, 'left', this.config.formatLabels),
+                createLabelElement(-currentLattitude, 0, southY, 'left', this.config.formatLabels),
+                createLabelElement(currentLattitude, 0, northY, 'right', this.config.formatLabels),
+                createLabelElement(-currentLattitude, 0, southY, 'right', this.config.formatLabels),
             ];
 
             elements.forEach(element => {
@@ -123,12 +123,38 @@ const createLabelsContainerElement = () => {
     return el;
 }
 
-const createLabelElement = (latitude: number, x: number, y: number, align: 'left' | 'right') => {
+const createLabelElement = (
+    latitude: number,
+    x: number,
+    y: number, align: 'left' | 'right',
+    format: (degress: number) => string
+) => {
     const el = document.createElement('div');
-    el.innerText = latitude.toString();
+    el.innerText = format(latitude);
     el.setAttribute('latitude', latitude.toFixed(20));
     el.style.position = 'absolute';
     el.style[align] = `${x.toString()}px`;
     el.style.top = `${y.toString()}px`;
     return el;
+}
+
+const formatDegrees = (degressFloat: number) => {
+    const degrees =  Math.floor(degressFloat);
+    const degreessFractionalPart = degressFloat - degrees;
+    const minutesFloat = degreessFractionalPart * 60;
+    const minutes = Math.floor(minutesFloat);
+    const minutesFractionalPart = minutesFloat - minutes;
+    const seconds = Math.round(minutesFractionalPart - Math.floor(minutesFractionalPart));
+
+    let output = `${degrees.toString()}°`;
+
+    if (minutes !== 0) {
+        output += ` ${minutes}′`;
+    }
+
+    if (seconds !== 0) {
+        output += ` ${seconds}′′`;
+    }
+
+    return output;
 }
