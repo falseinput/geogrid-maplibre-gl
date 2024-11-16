@@ -89,11 +89,37 @@ export class GeoGrid {
                 this.elements.labelsContainer.appendChild(element);
             })
         }
+
+        for (let currentLongitude = 0; currentLongitude < MAX_LONGITUDE; currentLongitude += stepInDegrees) {
+            const eastX = this.map.project([currentLongitude, 0]).x;
+            const westX = this.map.project([-currentLongitude, 0]).x;
+        
+            const elements = [
+                createLabelElement(currentLongitude, eastX, 0, 'top', this.config.formatLabels),
+                createLabelElement(-currentLongitude, westX, 0, 'top', this.config.formatLabels),
+                createLabelElement(currentLongitude, eastX, 0, 'bottom', this.config.formatLabels),
+                createLabelElement(-currentLongitude, westX, 0, 'bottom', this.config.formatLabels),
+            ];
+        
+            elements.forEach(element => {
+                this.elements.labels.push(element);
+                this.elements.labelsContainer.appendChild(element);
+            });
+        }
     }
 
     updateLabelPositions = () => {
         this.elements.labels.forEach(el => {
-            el.style.top = `${this.map.project([0, parseFloat(el.getAttribute('latitude')!)]).y}px`
+            const latitude = el.getAttribute('latitude');
+            const longitude = el.getAttribute('longitude');
+
+            if (latitude) {
+                el.style.top = `${this.map.project([0, parseFloat(latitude!)]).y}px`;
+            }
+
+            if (longitude) {
+                el.style.left = `${this.map.project([parseFloat(longitude!), 0]).x}px`;
+            }            
         });
     }
 
@@ -139,7 +165,7 @@ const createParallelsGeometry = (stepInDegrees: number) => {
 
 const createMeridiansGeometry = (stepInDegrees: number) => {
     const geometry: Postition[][] = [];
-    for (let currentLongitude = 0; currentLongitude < MAX_LATTITUDE; currentLongitude += stepInDegrees) {
+    for (let currentLongitude = 0; currentLongitude < MAX_LONGITUDE; currentLongitude += stepInDegrees) {
         geometry.push([[currentLongitude, MIN_LATTITUDE], [currentLongitude, MAX_LATTITUDE]]);
         geometry.push([[-currentLongitude, MIN_LATTITUDE], [-currentLongitude, MAX_LATTITUDE]]);
     }
@@ -149,22 +175,26 @@ const createMeridiansGeometry = (stepInDegrees: number) => {
 const createLabelsContainerElement = () => {
     const el = document.createElement('div');
     el.style.position = 'relative';
+    el.style.height = '100%';
+    el.style.pointerEvents = 'none';
    
     return el;
 }
 
 const createLabelElement = (
-    latitude: number,
+    value: number,
     x: number,
-    y: number, align: 'left' | 'right',
+    y: number, 
+    align: 'left' | 'right' | 'top' | 'bottom',
     format: (degress: number) => string
 ) => {
+    const alignTopOrBottom = align === 'top' || align === 'bottom';
     const el = document.createElement('div');
-    el.innerText = format(latitude);
-    el.setAttribute('latitude', latitude.toFixed(20));
+    el.innerText = format(value);
+    el.setAttribute(alignTopOrBottom ? 'longitude' : 'latitude', value.toFixed(20));
     el.style.position = 'absolute';
-    el.style[align] = `${x.toString()}px`;
-    el.style.top = `${y.toString()}px`;
+    el.style[alignTopOrBottom ? 'left' : align ] = `${x.toString()}px`;
+    el.style[alignTopOrBottom ? align : 'top'] = `${y.toString()}px`;
     return el;
 }
 
