@@ -16,7 +16,7 @@ export class GeoGrid {
         parallersSourceName: `${PLUGIN_PREFIX}_parallers_source`,
         meridiansLayerName: `${PLUGIN_PREFIX}_meridians`,
         meridiansSourceName: `${PLUGIN_PREFIX}_meridians_source`,
-        parallersStep: (zoomLevel: number) => 40 / Math.pow(Math.floor(zoomLevel) + 1, 2),
+        gridDensity: getGridDensity,
         formatLabels: formatDegrees
     };
     private elements: Elements = {
@@ -29,23 +29,23 @@ export class GeoGrid {
         this.map._container.appendChild(this.elements.labelsContainer);
         map.once('load', this.onLoad);
         map.on('zoom', this.onZoom);
-        map.on('move', this.updateLabelPositions);
+        map.on('move', this.onMove);
         
         map.on('remove', () => {
             map.off('zoom', this.onZoom);
-            map.off('move', this.updateLabelPositions)
+            map.off('move', this.onMove)
         });
     }
 
     onLoad = () => {
         this.previousZoom = this.map.getZoom();
-        const parallersStep = this.config.parallersStep(this.map.getZoom());
+        const densityInDegrees = this.config.gridDensity(this.map.getZoom());
    
         this.map.addSource(this.config.parallersSourceName, {
             type: 'geojson',
             data: {
                 type: 'MultiLineString',
-                coordinates: createParallelsGeometry(parallersStep)
+                coordinates: createParallelsGeometry(densityInDegrees)
             }
         });
 
@@ -59,7 +59,7 @@ export class GeoGrid {
             type: 'geojson',
             data: {
                 type: 'MultiLineString',
-                coordinates: createMeridiansGeometry(parallersStep)
+                coordinates: createMeridiansGeometry(densityInDegrees)
             }
         });
 
@@ -69,11 +69,11 @@ export class GeoGrid {
             source: this.config.meridiansSourceName
         });
 
-        this.drawLabels(parallersStep);
+        this.drawLabels(densityInDegrees);
     }
 
-    drawLabels = (stepInDegrees: number) => {
-        for (let currentLattitude = 0; currentLattitude < MAX_LATTITUDE; currentLattitude += stepInDegrees) {
+    drawLabels = (densityInDegrees: number) => {
+        for (let currentLattitude = 0; currentLattitude < MAX_LATTITUDE; currentLattitude += densityInDegrees) {
             const northY = this.map.project([0, currentLattitude]).y;
             const southY = this.map.project([0, -currentLattitude]).y;
 
@@ -90,7 +90,7 @@ export class GeoGrid {
             })
         }
 
-        for (let currentLongitude = 0; currentLongitude < MAX_LONGITUDE; currentLongitude += stepInDegrees) {
+        for (let currentLongitude = 0; currentLongitude < MAX_LONGITUDE; currentLongitude += densityInDegrees) {
             const eastX = this.map.project([currentLongitude, 0]).x;
             const westX = this.map.project([-currentLongitude, 0]).x;
         
@@ -105,6 +105,20 @@ export class GeoGrid {
                 this.elements.labels.push(element);
                 this.elements.labelsContainer.appendChild(element);
             });
+        }
+    }
+
+    onMove = () => {
+        this.updateLabelsVisibility();
+        this.updateLabelPositions();
+    }
+
+    updateLabelsVisibility = () => {
+        const isRotated = Math.abs(this.map.getBearing()) !== 0;
+        if (isRotated) {
+            this.elements.labelsContainer.style.display = 'none';
+        } else {
+            this.elements.labelsContainer.style.display = 'block';
         }
     }
 
@@ -125,22 +139,22 @@ export class GeoGrid {
 
     onZoom = () => {
         const currentZoom = Math.floor(this.map.getZoom());
-        const stepsInDegrees = this.config.parallersStep(currentZoom);
+        const densityInDegrees = this.config.gridDensity(currentZoom);
 
         this.removeLabels();
-        this.drawLabels(stepsInDegrees);
+        this.drawLabels(densityInDegrees);
 
         if (currentZoom != Math.floor(this.previousZoom)) {
             const parallersSource: GeoJSONSource = this.map.getSource(this.config.parallersSourceName) as GeoJSONSource;
             parallersSource.setData(
                 createMultiLineString(
-                    createParallelsGeometry(stepsInDegrees) 
+                    createParallelsGeometry(densityInDegrees) 
                 )
             );
             const meridiansSource: GeoJSONSource = this.map.getSource(this.config.meridiansSourceName) as GeoJSONSource;
             meridiansSource.setData(
                 createMultiLineString(
-                    createMeridiansGeometry(stepsInDegrees) 
+                    createMeridiansGeometry(densityInDegrees) 
                 )
             );
         }
@@ -154,18 +168,18 @@ export class GeoGrid {
     }
 }
 
-const createParallelsGeometry = (stepInDegrees: number) => {
+const createParallelsGeometry = (densityInDegrees: number) => {
     const geometry: Postition[][] = [];
-    for (let currentLattitude = 0; currentLattitude < MAX_LATTITUDE; currentLattitude += stepInDegrees) {
+    for (let currentLattitude = 0; currentLattitude < MAX_LATTITUDE; currentLattitude += densityInDegrees) {
         geometry.push([[MIN_LONGITUDE, currentLattitude], [MAX_LONGITUDE, currentLattitude]]);
         geometry.push([[MIN_LONGITUDE, -currentLattitude], [MAX_LONGITUDE, -currentLattitude]]);
     }
     return geometry;
 }
 
-const createMeridiansGeometry = (stepInDegrees: number) => {
+const createMeridiansGeometry = (densityInDegrees: number) => {
     const geometry: Postition[][] = [];
-    for (let currentLongitude = 0; currentLongitude < MAX_LONGITUDE; currentLongitude += stepInDegrees) {
+    for (let currentLongitude = 0; currentLongitude < MAX_LONGITUDE; currentLongitude += densityInDegrees) {
         geometry.push([[currentLongitude, MIN_LATTITUDE], [currentLongitude, MAX_LATTITUDE]]);
         geometry.push([[-currentLongitude, MIN_LATTITUDE], [-currentLongitude, MAX_LATTITUDE]]);
     }
@@ -218,3 +232,42 @@ const formatDegrees = (degressFloat: number) => {
 
     return output;
 }
+
+function getGridDensity(zoom: number) {
+    switch (zoom) {
+      case 0:
+        return 30;
+      case 1:
+        return 15;
+      case 2:
+        return 10;
+      case 3:
+        return 7.5;
+      case 4:
+        return 5;
+      case 5:
+        return 3;
+      case 6:
+        return 2;
+      case 7:
+        return 1.5;
+      case 8:
+        return 0.75;
+      case 9:
+        return 0.5;
+      case 10:
+        return 0.25;
+      case 11:
+        return 0.125;
+      case 12:
+        return 0.075;
+      case 13:
+        return 0.05;
+      case 14:
+        return 0.025;
+      default:
+        return 0.01;
+    }
+  }
+  
+  
