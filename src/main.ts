@@ -1,5 +1,5 @@
 import { GeoJSONSource, Map } from 'maplibre-gl';
-import { MAX_LATTITUDE, MAX_LONGITUDE, MIN_LONGITUDE, PLUGIN_PREFIX } from './constants';
+import { MAX_LATTITUDE, MAX_LONGITUDE, MIN_LATTITUDE, MIN_LONGITUDE, PLUGIN_PREFIX } from './constants';
 import { Postition } from './types';
 import { createMultiLineString } from './geojson';
 
@@ -14,6 +14,8 @@ export class GeoGrid {
     private config = {
         parallersLayerName: `${PLUGIN_PREFIX}_parallers`,
         parallersSourceName: `${PLUGIN_PREFIX}_parallers_source`,
+        meridiansLayerName: `${PLUGIN_PREFIX}_meridians`,
+        meridiansSourceName: `${PLUGIN_PREFIX}_meridians_source`,
         parallersStep: (zoomLevel: number) => 40 / Math.pow(Math.floor(zoomLevel) + 1, 2),
         formatLabels: formatDegrees
     };
@@ -53,6 +55,20 @@ export class GeoGrid {
             source: this.config.parallersSourceName
         });
 
+        this.map.addSource(this.config.meridiansSourceName, {
+            type: 'geojson',
+            data: {
+                type: 'MultiLineString',
+                coordinates: createMeridiansGeometry(parallersStep)
+            }
+        });
+
+        this.map.addLayer({
+            id: this.config.meridiansLayerName,
+            type: 'line',
+            source: this.config.meridiansSourceName
+        });
+
         this.drawLabels(parallersStep);
     }
 
@@ -89,11 +105,16 @@ export class GeoGrid {
         this.drawLabels(stepsInDegrees);
 
         if (currentZoom != Math.floor(this.previousZoom)) {
-        
             const parallersSource: GeoJSONSource = this.map.getSource(this.config.parallersSourceName) as GeoJSONSource;
             parallersSource.setData(
                 createMultiLineString(
                     createParallelsGeometry(stepsInDegrees) 
+                )
+            );
+            const meridiansSource: GeoJSONSource = this.map.getSource(this.config.meridiansSourceName) as GeoJSONSource;
+            meridiansSource.setData(
+                createMultiLineString(
+                    createMeridiansGeometry(stepsInDegrees) 
                 )
             );
         }
@@ -114,6 +135,15 @@ const createParallelsGeometry = (stepInDegrees: number) => {
         geometry.push([[MIN_LONGITUDE, -currentLattitude], [MAX_LONGITUDE, -currentLattitude]]);
     }
     return geometry;
+}
+
+const createMeridiansGeometry = (stepInDegrees: number) => {
+    const geometry: Postition[][] = [];
+    for (let currentLongitude = 0; currentLongitude < MAX_LATTITUDE; currentLongitude += stepInDegrees) {
+        geometry.push([[currentLongitude, MIN_LATTITUDE], [currentLongitude, MAX_LATTITUDE]]);
+        geometry.push([[-currentLongitude, MIN_LATTITUDE], [-currentLongitude, MAX_LATTITUDE]]);
+    }
+    return geometry; 
 }
 
 const createLabelsContainerElement = () => {
