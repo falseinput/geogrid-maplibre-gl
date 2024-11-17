@@ -1,4 +1,4 @@
-import { GeoJSONSource, Map } from 'maplibre-gl';
+import { GeoJSONSource, LngLatBounds, Map } from 'maplibre-gl';
 import { MAX_LATTITUDE, MAX_LONGITUDE, MIN_LATTITUDE, MIN_LONGITUDE, PLUGIN_PREFIX } from './constants';
 import { Postition } from './types';
 import { createMultiLineString } from './geojson';
@@ -10,7 +10,6 @@ interface Elements {
 
 export class GeoGrid {
     private map: Map;
-    private previousZoom = 0;
     private config = {
         parallersLayerName: `${PLUGIN_PREFIX}_parallers`,
         parallersSourceName: `${PLUGIN_PREFIX}_parallers_source`,
@@ -28,24 +27,35 @@ export class GeoGrid {
 
         this.map._container.appendChild(this.elements.labelsContainer);
         map.once('load', this.onLoad);
-        map.on('zoom', this.onZoom);
         map.on('move', this.onMove);
         
         map.on('remove', () => {
-            map.off('zoom', this.onZoom);
             map.off('move', this.onMove)
         });
     }
 
     onLoad = () => {
-        this.previousZoom = this.map.getZoom();
-        const densityInDegrees = this.config.gridDensity(this.map.getZoom());
-   
+        const densityInDegrees = this.config.gridDensity(Math.floor(this.map.getZoom()));
+        this.addLayersAndSources(densityInDegrees);
+    }
+
+    onMove = () => {
+        this.updateLabelsVisibility();
+        this.removeLabels();
+
+        const densityInDegrees = this.config.gridDensity(Math.floor(this.map.getZoom()));
+        this.drawLabels(densityInDegrees);
+        this.updateGrid(densityInDegrees);
+    }
+
+    addLayersAndSources = (densityInDegrees: number) => {
+        const bounds = this.map.getBounds();
+
         this.map.addSource(this.config.parallersSourceName, {
             type: 'geojson',
             data: {
                 type: 'MultiLineString',
-                coordinates: createParallelsGeometry(densityInDegrees)
+                coordinates: createParallelsGeometry(densityInDegrees, bounds)
             }
         });
 
@@ -59,7 +69,7 @@ export class GeoGrid {
             type: 'geojson',
             data: {
                 type: 'MultiLineString',
-                coordinates: createMeridiansGeometry(densityInDegrees)
+                coordinates: createMeridiansGeometry(densityInDegrees, bounds)
             }
         });
 
@@ -73,15 +83,13 @@ export class GeoGrid {
     }
 
     drawLabels = (densityInDegrees: number) => {
-        for (let currentLattitude = 0; currentLattitude < MAX_LATTITUDE; currentLattitude += densityInDegrees) {
-            const northY = this.map.project([0, currentLattitude]).y;
-            const southY = this.map.project([0, -currentLattitude]).y;
-
+        const bounds = this.map.getBounds();
+        let currentLattitude = Math.ceil(bounds.getSouth() / densityInDegrees) * densityInDegrees;
+        for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {  
+            const y = this.map.project([0, currentLattitude]).y;
             const elements = [
-                createLabelElement(currentLattitude, 0, northY, 'left', this.config.formatLabels),
-                createLabelElement(-currentLattitude, 0, southY, 'left', this.config.formatLabels),
-                createLabelElement(currentLattitude, 0, northY, 'right', this.config.formatLabels),
-                createLabelElement(-currentLattitude, 0, southY, 'right', this.config.formatLabels),
+                createLabelElement(currentLattitude, 0, y, 'left', this.config.formatLabels),
+                createLabelElement(currentLattitude, 0, y, 'right', this.config.formatLabels),
             ];
 
             elements.forEach(element => {
@@ -90,15 +98,12 @@ export class GeoGrid {
             })
         }
 
-        for (let currentLongitude = 0; currentLongitude < MAX_LONGITUDE; currentLongitude += densityInDegrees) {
-            const eastX = this.map.project([currentLongitude, 0]).x;
-            const westX = this.map.project([-currentLongitude, 0]).x;
-        
+        let currentLongitude = Math.ceil(bounds.getWest() / densityInDegrees) * densityInDegrees;
+        for (; currentLongitude < bounds.getEast(); currentLongitude += densityInDegrees) {
+            const x = this.map.project([currentLongitude, 0]).x;
             const elements = [
-                createLabelElement(currentLongitude, eastX, 0, 'top', this.config.formatLabels),
-                createLabelElement(-currentLongitude, westX, 0, 'top', this.config.formatLabels),
-                createLabelElement(currentLongitude, eastX, 0, 'bottom', this.config.formatLabels),
-                createLabelElement(-currentLongitude, westX, 0, 'bottom', this.config.formatLabels),
+                createLabelElement(currentLongitude, x, 0, 'top', this.config.formatLabels),
+                createLabelElement(currentLongitude, x, 0, 'bottom', this.config.formatLabels),
             ];
         
             elements.forEach(element => {
@@ -108,9 +113,20 @@ export class GeoGrid {
         }
     }
 
-    onMove = () => {
-        this.updateLabelsVisibility();
-        this.updateLabelPositions();
+    updateGrid = (densityInDegrees: number) => {
+        const bounds = this.map.getBounds();
+        const parallersSource: GeoJSONSource = this.map.getSource(this.config.parallersSourceName) as GeoJSONSource;
+        parallersSource.setData(
+            createMultiLineString(
+                createParallelsGeometry(densityInDegrees, bounds) 
+            )
+        );
+        const meridiansSource: GeoJSONSource = this.map.getSource(this.config.meridiansSourceName) as GeoJSONSource;
+        meridiansSource.setData(
+            createMultiLineString(
+                createMeridiansGeometry(densityInDegrees, bounds) 
+            )
+        );
     }
 
     updateLabelsVisibility = () => {
@@ -122,66 +138,26 @@ export class GeoGrid {
         }
     }
 
-    updateLabelPositions = () => {
-        this.elements.labels.forEach(el => {
-            const latitude = el.getAttribute('latitude');
-            const longitude = el.getAttribute('longitude');
-
-            if (latitude) {
-                el.style.top = `${this.map.project([0, parseFloat(latitude!)]).y}px`;
-            }
-
-            if (longitude) {
-                el.style.left = `${this.map.project([parseFloat(longitude!), 0]).x}px`;
-            }            
-        });
-    }
-
-    onZoom = () => {
-        const currentZoom = Math.floor(this.map.getZoom());
-        const densityInDegrees = this.config.gridDensity(currentZoom);
-
-        this.removeLabels();
-        this.drawLabels(densityInDegrees);
-
-        if (currentZoom != Math.floor(this.previousZoom)) {
-            const parallersSource: GeoJSONSource = this.map.getSource(this.config.parallersSourceName) as GeoJSONSource;
-            parallersSource.setData(
-                createMultiLineString(
-                    createParallelsGeometry(densityInDegrees) 
-                )
-            );
-            const meridiansSource: GeoJSONSource = this.map.getSource(this.config.meridiansSourceName) as GeoJSONSource;
-            meridiansSource.setData(
-                createMultiLineString(
-                    createMeridiansGeometry(densityInDegrees) 
-                )
-            );
-        }
-
-        this.previousZoom = currentZoom;
-    }
-
     removeLabels = () => {
         this.elements.labels = [];
         this.elements.labelsContainer.innerHTML = '';
     }
 }
 
-const createParallelsGeometry = (densityInDegrees: number) => {
+const createParallelsGeometry = (densityInDegrees: number, bounds: LngLatBounds) => {
     const geometry: Postition[][] = [];
-    for (let currentLattitude = 0; currentLattitude < MAX_LATTITUDE; currentLattitude += densityInDegrees) {
+    let currentLattitude = Math.ceil(bounds.getSouth() / densityInDegrees) * densityInDegrees;
+    for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {
         geometry.push([[MIN_LONGITUDE, currentLattitude], [MAX_LONGITUDE, currentLattitude]]);
-        geometry.push([[MIN_LONGITUDE, -currentLattitude], [MAX_LONGITUDE, -currentLattitude]]);
     }
     return geometry;
 }
 
-const createMeridiansGeometry = (densityInDegrees: number) => {
+const createMeridiansGeometry = (densityInDegrees: number, bounds: LngLatBounds) => {
     const geometry: Postition[][] = [];
-    for (let currentLongitude = 0; currentLongitude < MAX_LONGITUDE; currentLongitude += densityInDegrees) {
+    let currentLongitude = Math.ceil(bounds.getWest() / densityInDegrees) * densityInDegrees;
+     for (; currentLongitude < bounds.getEast(); currentLongitude += densityInDegrees) {
         geometry.push([[currentLongitude, MIN_LATTITUDE], [currentLongitude, MAX_LATTITUDE]]);
-        geometry.push([[-currentLongitude, MIN_LATTITUDE], [-currentLongitude, MAX_LATTITUDE]]);
     }
     return geometry; 
 }
