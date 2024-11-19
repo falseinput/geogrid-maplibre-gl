@@ -1,5 +1,5 @@
 {
-  "name": "geo-grid",
+  "name": "geogrid-maplibre-gl",
   "version": "0.1.0",
   "description": "GeoGrid is a maplibre-gl-js plugin for displaying customizable geographic grid on the map.",
   "main": "index.js",
@@ -17,6 +17,9 @@
     "rollup-plugin-typescript": "1.0.1"
   },
   "peerDependencies": {
-    "maplibre-gl": "4.x"
-  }
+    "maplibre-gl": "3.x 4.x"
+  },
+  "keywords": ["maplibre-gl-js", "plugin", "geographic grid"],
+  "type": "module",
+  "module": "./dist/index.js"
 }
