@@ -1,4 +1,4 @@
-import { Postition } from './types'
+import { Postition } from '../types'
 
 export const createMultiLineString = (coordinates: Postition[][]) => ({
     type: 'MultiLineString' as const,

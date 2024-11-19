@@ -1,9 +1,13 @@
-import { GeoJSONSource, LngLatBounds, Map } from 'maplibre-gl';
-import { classnames, MAX_LATTITUDE, MAX_LONGITUDE, MIN_LATTITUDE, MIN_LONGITUDE, PLUGIN_PREFIX } from './constants';
-import { Elements, Postition } from './types';
-import { createMultiLineString } from './geojson';
+import { GeoJSONSource, Map } from 'maplibre-gl';
+import { PLUGIN_PREFIX } from './constants';
+import { Elements } from './types';
+import { createMultiLineString } from './helpers/geojson';
+import { createMeridiansGeometry, createParallelsGeometry } from './helpers/geometry';
+import { createLabelElement, createLabelsContainerElement } from './helpers/html';
+import { getGridDensity } from './helpers/get-grid-density';
+import { formatDegrees } from './helpers/formatters';
 
-interface GridStyle {
+export interface GridStyle {
     color: string,
     width: number;
 }
@@ -196,109 +200,3 @@ export class GeoGrid {
         this.elements.labelsContainer.innerHTML = '';
     }
 }
-
-const createParallelsGeometry = (densityInDegrees: number, bounds: LngLatBounds) => {
-    const geometry: Postition[][] = [];
-    let currentLattitude = Math.ceil(bounds.getSouth() / densityInDegrees) * densityInDegrees;
-    for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {
-        geometry.push([[MIN_LONGITUDE, currentLattitude], [MAX_LONGITUDE, currentLattitude]]);
-    }
-    return geometry;
-}
-
-const createMeridiansGeometry = (densityInDegrees: number, bounds: LngLatBounds) => {
-    const geometry: Postition[][] = [];
-    let currentLongitude = Math.ceil(bounds.getWest() / densityInDegrees) * densityInDegrees;
-     for (; currentLongitude < bounds.getEast(); currentLongitude += densityInDegrees) {
-        geometry.push([[currentLongitude, MIN_LATTITUDE], [currentLongitude, MAX_LATTITUDE]]);
-    }
-    return geometry; 
-}
-
-const createLabelsContainerElement = () => {
-    const el = document.createElement('div');
-    el.classList.add(classnames.container);
-    el.style.position = 'relative';
-    el.style.height = '100%';
-    el.style.pointerEvents = 'none';
-   
-    return el;
-}
-
-const createLabelElement = (
-    value: number,
-    x: number,
-    y: number, 
-    align: 'left' | 'right' | 'top' | 'bottom',
-    format: (degress: number) => string
-) => {
-    const alignTopOrBottom = align === 'top' || align === 'bottom';
-    const el = document.createElement('div');
-    el.classList.add(classnames.label, `${classnames.label}--${align}`);
-    el.innerText = format(value);
-    el.setAttribute(alignTopOrBottom ? 'longitude' : 'latitude', value.toFixed(20));
-    el.style.position = 'absolute';
-    el.style[alignTopOrBottom ? 'left' : align ] = `${x.toString()}px`;
-    el.style[alignTopOrBottom ? align : 'top'] = `${y.toString()}px`;
-    return el;
-}
-
-const formatDegrees = (degressFloat: number) => {
-    const degrees =  Math.floor(degressFloat);
-    const degreessFractionalPart = degressFloat - degrees;
-    const minutesFloat = degreessFractionalPart * 60;
-    const minutes = Math.floor(minutesFloat);
-    const minutesFractionalPart = minutesFloat - minutes;
-    const seconds = Math.round(minutesFractionalPart - Math.floor(minutesFractionalPart));
-
-    let output = `${degrees.toString()}°`;
-
-    if (minutes !== 0) {
-        output += ` ${minutes}′`;
-    }
-
-    if (seconds !== 0) {
-        output += ` ${seconds}′′`;
-    }
-
-    return output;
-}
-
-function getGridDensity(zoom: number): number {
-    switch (zoom) {
-      case 0:
-        return 30;
-      case 1:
-        return 15;
-      case 2:
-        return 10;
-      case 3:
-        return 7.5;
-      case 4:
-        return 5;
-      case 5:
-        return 3;
-      case 6:
-        return 2;
-      case 7:
-        return 1.5;
-      case 8:
-        return 0.75;
-      case 9:
-        return 0.5;
-      case 10:
-        return 0.25;
-      case 11:
-        return 0.125;
-      case 12:
-        return 0.075;
-      case 13:
-        return 0.05;
-      case 14:
-        return 0.025;
-      default:
-        return 0.01;
-    }
-  }
-  
-  
