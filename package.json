@@ -1,7 +1,7 @@
 {
   "name": "geo-grid",
   "version": "0.1.0",
-  "description": "Geo Grid is a maplibre-gl-js plugin for displaying customizable geographic grid on the map.",
+  "description": "GeoGrid is a maplibre-gl-js plugin for displaying customizable geographic grid on the map.",
   "main": "index.js",
   "scripts": {
     "start": "python3 -m http.server",

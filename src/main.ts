@@ -1,20 +1,61 @@
 import { GeoJSONSource, LngLatBounds, Map } from 'maplibre-gl';
-import { MAX_LATTITUDE, MAX_LONGITUDE, MIN_LATTITUDE, MIN_LONGITUDE, PLUGIN_PREFIX } from './constants';
-import { Postition } from './types';
+import { classnames, MAX_LATTITUDE, MAX_LONGITUDE, MIN_LATTITUDE, MIN_LONGITUDE, PLUGIN_PREFIX } from './constants';
+import { Elements, Postition } from './types';
 import { createMultiLineString } from './geojson';
 
-interface Elements {
-    labels: HTMLElement[]
-    labelsContainer: HTMLElement;
+interface GridStyle {
+    color: string,
+    width: number;
 }
 
+export interface GeoGridOptions {
+    /**
+     * Instance of maplibre-gl-js map.
+     */
+    map: maplibregl.Map
+    /**
+     * Id of the layer before which grid grid layers will be placed.
+     * @default undefined
+     */
+    beforeLayerId?: string | undefined;
+    /**
+     * Grid style.
+     * @example
+     * ```
+     * {
+     *   color: '#ff0000'
+     *   width: 2
+     * }
+     * ```
+     */
+    style?: GridStyle
+    /**
+     * Function that sets density of the grid. Density is defined as the distance between grid lines in degress.
+     */
+    gridDensity?: (zoomLevel: number) => number;
+    /**
+     * Function that takes degrees float and returns formatted label string.
+     * By default, returns string in format "[degrees]° [minutes]` [seconds]``"
+     */
+    formatLabels?: (degreesFloat: number) => string
+}
+
+/**
+ * Creates customizable geographic grid and adds it to the map.
+ *
+ */
 export class GeoGrid {
     private map: Map;
     private config = {
+        beforeLayerId: undefined as string | undefined,
         parallersLayerName: `${PLUGIN_PREFIX}_parallers`,
         parallersSourceName: `${PLUGIN_PREFIX}_parallers_source`,
         meridiansLayerName: `${PLUGIN_PREFIX}_meridians`,
         meridiansSourceName: `${PLUGIN_PREFIX}_meridians_source`,
+        style: {
+            color: '#000000',
+            width: 1
+        },
         gridDensity: getGridDensity,
         formatLabels: formatDegrees
     };
@@ -22,15 +63,23 @@ export class GeoGrid {
         labels: [],
         labelsContainer: createLabelsContainerElement()
     };
-    constructor(map: Map) {
-        this.map = map;
+    constructor(options: GeoGridOptions) {
+        if (!options.map) {
+            throw new Error('GeoGrid: "map" option is required');
+        }
+
+        this.map = options.map;
+        this.config.beforeLayerId = options.beforeLayerId || this.config.beforeLayerId;
+        this.config.style.color = options.style?.color || this.config.style.color;
+        this.config.style.width = options.style?.width || this.config.style.width;
+        this.config.formatLabels = options.formatLabels || this.config.formatLabels;
+        this.config.gridDensity = options.gridDensity || this.config.gridDensity;
 
         this.map._container.appendChild(this.elements.labelsContainer);
-        map.once('load', this.onLoad);
-        map.on('move', this.onMove);
-        
-        map.on('remove', () => {
-            map.off('move', this.onMove)
+        this.map.once('load', this.onLoad);
+        this.map.on('move', this.onMove);
+        this.map.on('remove', () => {
+            this.map.off('move', this.onMove)
         });
     }
 
@@ -62,8 +111,12 @@ export class GeoGrid {
         this.map.addLayer({
             id: this.config.parallersLayerName,
             type: 'line',
-            source: this.config.parallersSourceName
-        });
+            source: this.config.parallersSourceName,
+            paint: {
+                'line-color': this.config.style.color,
+                'line-width': this.config.style.width
+            }
+        }, this.config.beforeLayerId);
 
         this.map.addSource(this.config.meridiansSourceName, {
             type: 'geojson',
@@ -76,8 +129,12 @@ export class GeoGrid {
         this.map.addLayer({
             id: this.config.meridiansLayerName,
             type: 'line',
-            source: this.config.meridiansSourceName
-        });
+            source: this.config.meridiansSourceName,
+            paint: {
+                'line-color': this.config.style.color,
+                'line-width': this.config.style.width
+            }
+        }, this.config.beforeLayerId);
 
         this.drawLabels(densityInDegrees);
     }
@@ -130,12 +187,8 @@ export class GeoGrid {
     }
 
     updateLabelsVisibility = () => {
-        const isRotated = Math.abs(this.map.getBearing()) !== 0;
-        if (isRotated) {
-            this.elements.labelsContainer.style.display = 'none';
-        } else {
-            this.elements.labelsContainer.style.display = 'block';
-        }
+        const isFacingNorth = Math.abs(this.map.getBearing()) === 0;
+        this.elements.labelsContainer.style.display = isFacingNorth ? 'block' : 'none';
     }
 
     removeLabels = () => {
@@ -164,6 +217,7 @@ const createMeridiansGeometry = (densityInDegrees: number, bounds: LngLatBounds)
 
 const createLabelsContainerElement = () => {
     const el = document.createElement('div');
+    el.classList.add(classnames.container);
     el.style.position = 'relative';
     el.style.height = '100%';
     el.style.pointerEvents = 'none';
@@ -180,6 +234,7 @@ const createLabelElement = (
 ) => {
     const alignTopOrBottom = align === 'top' || align === 'bottom';
     const el = document.createElement('div');
+    el.classList.add(classnames.label, `${classnames.label}--${align}`);
     el.innerText = format(value);
     el.setAttribute(alignTopOrBottom ? 'longitude' : 'latitude', value.toFixed(20));
     el.style.position = 'absolute';
@@ -209,7 +264,7 @@ const formatDegrees = (degressFloat: number) => {
     return output;
 }
 
-function getGridDensity(zoom: number) {
+function getGridDensity(zoom: number): number {
     switch (zoom) {
       case 0:
         return 30;

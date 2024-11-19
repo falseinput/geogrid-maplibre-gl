@@ -8,6 +8,14 @@
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+        .geogrid__label--left {
+            padding-left: 4px;
+        }
+
+        .geogrid__label--right {
+            padding-right: 4px;
+        }
     </style>
 </head>
 <body>
@@ -16,7 +24,7 @@
     <script src="../dist/index.js" type="module"></script>
     <script type="module">
         import { GeoGrid } from '../dist/index.js';
-        // Initialize the mapA
+        // Initialize the map
         const map = new maplibregl.Map({
             container: 'map', // container id
             style: 'https://demotiles.maplibre.org/style.json', // style URL
@@ -24,7 +32,9 @@
             zoom: 2 // starting zoom
         });
 
-        new GeoGrid(map);
+        new GeoGrid({ map, style: {
+            color: 'rgba(255, 255, 255, 0.5)'
+        } });
     </script>
 </body>
 </html>
