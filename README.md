@@ -1,24 +1,26 @@
-# geogrid-maplibre-gl
 
-GeoGrid is a maplibre-gl-js plugin for displaying customizable geographic grid on the map.
+# GeoGrid for MapLibre GL  
 
-<img src="./assets/geogrid.png" />
+**GeoGrid** is a MapLibre GL JS plugin for adding a highly customizable geographic grid to your map.  
 
-# Features
+![GeoGrid example](./assets/geogrid.png)  
 
-* Displays geographic grid with labels.
-* Allows changing grid densisty per zoom level.
-* Make grid visible only on specific zoom level range with `zoomLevelRange`.
-* Allows changing labels display format. Default is: <code>[degrees]° [minutes]` [seconds]``</code>
-* Styling labels is done with CSS, easily add text shadow, blending mode etc.
-* Style grid by changing color of width via API.
-* Place grid lines under any of exisiting layers with `beforeLayerId`.
-* Labels hide automatically when the map is not facing north.
-* No impact on performance: only elements visible in viewport are added.
-* Remove programatically by calling `remove()`.
-* Works with any maplibre-gl-js version.
-* TypeScript types available.
-* Available as a JavaScript Module.
+## Features  
+
+- **Display Geographic Grid**: Adds a grid with labeled coordinates to the map.
+- **Customizable Grid Density**: Adjust grid density dynamically based on zoom level.
+- **Zoom Level Visibility Range**: Control grid visibility with the `zoomLevelRange` option.
+- **Custom Label Formats**: Change the label format to suit your needs. Default format:  
+  ```[degrees]° [minutes]’ [seconds]’’```
+- **CSS Label Styling**: Easily style labels using CSS (e.g., text shadows, blending modes).
+- **Flexible Grid Styling**: Modify grid line color and width via the API.
+- **Layer Placement Control**: Place grid lines under any existing map layer using `beforeLayerId`.
+- **Dynamic Label Visibility**: Labels automatically hide when the map is rotated away from north.
+- **Optimized Performance**: Only elements visible in the viewport are rendered, ensuring no performance impact.
+- **Easy Removal**: Remove the grid programmatically using the `remove()` method.  
+- **TypeScript Support**: Includes TypeScript definitions for better development experience.
+- **ES Module Ready**: Available as a JavaScript module for modern workflows.
+
 
 ## Installation
 
@@ -28,7 +30,7 @@ Get it from NPM:
 npm i -E geogrid-maplibre-gl
 ```
 
-Or from the CDN:
+Or use it from the CDN:
 
 ```html
 <script type="module" src="https://unpkg.com/geogrid-maplibre-gl@latest"></script>
@@ -37,7 +39,7 @@ Or from the CDN:
 
 ## Usage
 
-Minimal example:
+### Minimal example
 
 ```js
 import { GeoGrid } from 'geogrid-maplibre-gl';
@@ -45,10 +47,10 @@ import { GeoGrid } from 'geogrid-maplibre-gl';
 
 // const map = new maplibregl.Map(...);
 
-new GeoGrid({ map })
+new GeoGrid({ map });
 ```
 
-All options:
+### All optionsw
 
 ```js
 import { GeoGrid } from 'geogrid-maplibre-gl';
@@ -82,9 +84,9 @@ geogrid.add();
 
 ## Styling
 
-You can override the following CSS classes:
-* `geogrid` - Labels container.
-* `geogrid__label` - Label elements.
+Customize the appearance of the grid labels by overriding the following CSS classes:
+* `geogrid` - The main container for labels.
+* `geogrid__label` - Invidual label elements.
 * `geogrid__label--left` - Labels on the left.
 * `geogrid__label--right` - Labels on the right.
 * `geogrid__label--top` - Labels on the top.
