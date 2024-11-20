@@ -9,6 +9,7 @@
     "watch": "rollup -c -w"
   },
   "author": "Zbigniew Matysek <matysek.zbigniew@gmail.com>",
+  "repository": "https://github.com/falseinput/geogrid-maplibre-gl",
   "license": "MIT",
   "devDependencies": {
     "rollup": "4.25.0",
