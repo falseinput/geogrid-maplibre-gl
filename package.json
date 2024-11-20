@@ -13,13 +13,19 @@
   "license": "MIT",
   "devDependencies": {
     "rollup": "4.25.0",
+    "rollup-plugin-copy": "3.5.0",
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-typescript": "1.0.1"
   },
   "peerDependencies": {
-    "maplibre-gl": "3.x 4.x"
+    "maplibre-gl": "3.x"
   },
-  "keywords": ["maplibre-gl-js", "plugin", "geographic grid"],
+  "keywords": [
+    "maplibre-gl-js",
+    "plugin",
+    "geographic grid"
+  ],
+  "files": ["dist"],
   "type": "module",
   "module": "./dist/index.js"
 }

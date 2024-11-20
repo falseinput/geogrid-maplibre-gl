@@ -5,17 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MapLibre GL JS Map</title>
     <link href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="../dist/geogrid.css" rel="stylesheet" />
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-
-        .geogrid__label--left {
-            padding-left: 4px;
-        }
-
-        .geogrid__label--right {
-            padding-right: 4px;
-        }
     </style>
 </head>
 <body>
@@ -32,9 +25,10 @@
             zoom: 2 // starting zoom
         });
 
-        new GeoGrid({ map, style: {
+        window.g = new GeoGrid({ map, style: {
             color: 'rgba(255, 255, 255, 0.5)'
-        } });
+        },
+        zoomLevelRange: [5, 10] });
     </script>
 </body>
 </html>

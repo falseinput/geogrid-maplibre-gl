@@ -2,11 +2,13 @@
 
 GeoGrid is a maplibre-gl-js plugin for displaying customizable geographic grid on the map.
 
+<img src="./assets/geogrid.png" />
 
 # Features
 
 * Displays geographic grid with labels.
 * Allows changing grid densisty per zoom level.
+* Make grid visible only on specific zoom level range with `zoomLevelRange`.
 * Allows changing labels display format. Default is: <code>[degrees]° [minutes]` [seconds]``</code>
 * Styling labels is done with CSS, easily add text shadow, blending mode etc.
 * Style grid by changing color of width via API.
@@ -19,7 +21,6 @@ GeoGrid is a maplibre-gl-js plugin for displaying customizable geographic grid o
 * Available as a JavaScript Module.
 
 ## Installation
-
 
 Get it from NPM:
 
@@ -56,14 +57,27 @@ import { GeoGrid } from 'geogrid-maplibre-gl';
 
 new GeoGrid({ 
     map,
-    // beforeLayerId: 'labels'
-    // style: {
-    //     color: 'rgba(255, 255, 255, 0.5)'
-    //     width: 2
-    // },
-    // gridDensity: (zoomLevel) => 10;
-    // formatLabels: (degreesFloat) => Math.floor(degreesFloat);
+    beforeLayerId: 'labels'
+    style: {
+        color: 'rgba(255, 255, 255, 0.5)'
+        width: 2
+    },
+    zoomLevelRange: [0, 13],
+    gridDensity: (zoomLevel) => 10;
+    formatLabels: (degreesFloat) => Math.floor(degreesFloat);
 });
+```
+
+Programatically removing and re-adding:
+
+```js
+const geogrid = new GeoGrid({ map });
+
+// On some event
+geogrid.remove();
+
+// On another event
+geogrid.add();
 ```
 
 ## Styling
