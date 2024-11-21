@@ -27,7 +27,7 @@
 Get it from NPM:
 
 ```bash
-npm i -E geogrid-maplibre-gl
+npm i geogrid-maplibre-gl
 ```
 
 Or use it from the CDN:
@@ -50,7 +50,7 @@ import { GeoGrid } from 'geogrid-maplibre-gl';
 new GeoGrid({ map });
 ```
 
-### All optionsw
+### All options
 
 ```js
 import { GeoGrid } from 'geogrid-maplibre-gl';
