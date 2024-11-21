@@ -2,7 +2,7 @@ import { classnames } from '../constants';
 
 export const createLabelsContainerElement = () => {
     const el = document.createElement('div');
-    el.classList.add(classnames.container);
+    el.classList.add(classnames.container, classnames.containerOverride);
     el.style.position = 'relative';
     el.style.height = '100%';
     el.style.pointerEvents = 'none';

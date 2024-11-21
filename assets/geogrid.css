@@ -1,20 +1,21 @@
-.geogrid__label {
+
+.geogrid .geogrid__label {
     text-shadow: 0px 0px 2px #fff;
     font-size: 14px;
     font-weight: bold;
 }
 
-.geogrid__label--top,
-.geogrid__label--bottom {
+.geogrid  .geogrid__label--top,
+.geogrid .geogrid__label--bottom {
     transform: translateX(-50%);
 }
 
-.geogrid__label--left {
+.geogrid .geogrid__label--left {
     padding-left: 4px;
     transform: translateY(-50%);
 }
 
-.geogrid__label--right {
+.geogrid .geogrid__label--right {
     padding-right: 4px;
     transform: translateY(-50%);
 }

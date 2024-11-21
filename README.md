@@ -91,3 +91,12 @@ Customize the appearance of the grid labels by overriding the following CSS clas
 * `geogrid__label--right` - Labels on the right.
 * `geogrid__label--top` - Labels on the top.
 * `geogrid__label--bottom` - Labels on the bottom.
+
+To prevent overriding default properties, nest overrides inside `.geogrid-overrides` selector.
+
+For example:
+```css
+.geogrid-overrides .geogrid__label {
+    color: red
+}
+```

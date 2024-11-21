@@ -8,8 +8,8 @@ import { getGridDensity } from './helpers/get-grid-density';
 import { formatDegrees } from './helpers/formatters';
 
 export interface GridStyle {
-    color: string,
-    width: number;
+    color?: string,
+    width?: number;
 }
 
 export interface GeoGridOptions {
