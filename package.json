@@ -19,7 +19,7 @@
     "typescript": "5.6.3"
   },
   "peerDependencies": {
-    "maplibre-gl": "3.x || 4.x | 5.x"
+    "maplibre-gl": "3.x || 4.x || 5.x"
   },
   "keywords": [
     "maplibre-gl-js",
