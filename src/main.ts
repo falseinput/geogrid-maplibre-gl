@@ -218,11 +218,35 @@ export class GeoGrid {
 
         let currentLongitude = Math.ceil(bounds.getWest() / densityInDegrees) * densityInDegrees;
         for (; currentLongitude < bounds.getEast(); currentLongitude += densityInDegrees) {
-            const x = this.map.project([currentLongitude, 0]).x;
-            const elements = [
-                createLabelElement(currentLongitude, x, 0, 'top', this.config.formatLabels),
-                createLabelElement(currentLongitude, x, 0, 'bottom', this.config.formatLabels),
-            ];
+            const notOcludedLatitutes = calculateTopMostNotOcludedLatitude(this.map, currentLongitude);
+    
+            const elements = [];
+            if (notOcludedLatitutes.length >= 2) {
+                const mostNorthNotOccludedLat =  notOcludedLatitutes[notOcludedLatitutes.length - 1] % 90;
+
+                // The case when top of the screen is beyond (on the other side) north pole in the globe projection.
+                if (mostNorthNotOccludedLat >= bounds.getNorth()) {
+                    const y = this.map.project([currentLongitude, mostNorthNotOccludedLat]).y;
+                    const x = this.map.project([currentLongitude, bounds.getNorth()]).x;
+                    const isTopYOccluded = map.transform.isLocationOccluded(this.map.unproject([x, 0]));
+
+                    elements.push(
+                        createLabelElement(
+                            currentLongitude,
+                            x,
+                            // Labels are aligned to the top edge of the screen when unprojected location is visibled on the globe
+                            // Otherwhise y location is on the egde of the globe.
+                            isTopYOccluded ? Math.max(y, 0) : 0,
+                            'top',
+                            this.config.formatLabels
+                        )
+                    );
+                }
+            }
+            // const elements = [
+            //     // createLabelElement(currentLongitude, x, this.map.unproject([currentLongitude, maxLat]).lat, 'top', this.config.formatLabels),
+            //     // createLabelElement(currentLongitude, x, maxLat, 'bottom', this.config.formatLabels),
+            // ];
         
             elements.forEach(element => {
                 this.elements.labels.push(element);
@@ -256,4 +280,21 @@ export class GeoGrid {
         this.elements.labels = [];
         this.elements.labelsContainer.innerHTML = '';
     }
+}
+
+
+const calculateTopMostNotOcludedLatitude = (map: Map, longitude: number) => {
+    const notOcludedLatitutes = [];
+    const centerLat =  map.getCenter().lat
+    for (let latitude = centerLat; latitude < Math.min(centerLat + 90, 85); latitude+=0.1) {
+        const isOccluded = map.transform.isLocationOccluded({ lng: longitude, lat: latitude});
+        // console.log(isOccluded, [currentLongitude, latitude]);
+        if (!isOccluded) {
+            notOcludedLatitutes.push(latitude);
+        } else {
+            break;
+        }
+    }
+
+    return notOcludedLatitutes
 }
