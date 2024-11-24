@@ -1,4 +1,4 @@
-import { FilterSpecification, GeoJSONSource, Map } from 'maplibre-gl';
+import { FilterSpecification, GeoJSONSource, LngLatBounds, Map } from 'maplibre-gl';
 import { classnames, PLUGIN_PREFIX } from './constants';
 import { Elements } from './types';
 import { createMultiLineString } from './helpers/geojson';
@@ -217,41 +217,20 @@ export class GeoGrid {
         }
 
         let currentLongitude = Math.ceil(bounds.getWest() / densityInDegrees) * densityInDegrees;
+   
         for (; currentLongitude < bounds.getEast(); currentLongitude += densityInDegrees) {
-            const notOcludedLatitutes = calculateTopMostNotOcludedLatitude(this.map, currentLongitude);
-    
-            const elements = [];
-            if (notOcludedLatitutes.length >= 2) {
-                const mostNorthNotOccludedLat =  notOcludedLatitutes[notOcludedLatitutes.length - 1] % 90;
+            const { topLat, bottomLat } = calculateNotOccludedLatitudes(this.map, currentLattitude);
+            const topLabel = this.drawTopLabel(currentLongitude, topLat, bounds);
+            const bottomLabel = this.drawBottomLabel(currentLongitude, bottomLat, bounds);
 
-                // The case when top of the screen is beyond (on the other side) north pole in the globe projection.
-                if (mostNorthNotOccludedLat >= bounds.getNorth()) {
-                    const y = this.map.project([currentLongitude, mostNorthNotOccludedLat]).y;
-                    const x = this.map.project([currentLongitude, bounds.getNorth()]).x;
-                    const isTopYOccluded = map.transform.isLocationOccluded(this.map.unproject([x, 0]));
-
-                    elements.push(
-                        createLabelElement(
-                            currentLongitude,
-                            x,
-                            // Labels are aligned to the top edge of the screen when unprojected location is visibled on the globe
-                            // Otherwhise y location is on the egde of the globe.
-                            isTopYOccluded ? Math.max(y, 0) : 0,
-                            'top',
-                            this.config.formatLabels
-                        )
-                    );
-                }
+            if (topLabel) {
+                this.elements.labels.push(topLabel);
+                this.elements.labelsContainer.appendChild(topLabel);
             }
-            // const elements = [
-            //     // createLabelElement(currentLongitude, x, this.map.unproject([currentLongitude, maxLat]).lat, 'top', this.config.formatLabels),
-            //     // createLabelElement(currentLongitude, x, maxLat, 'bottom', this.config.formatLabels),
-            // ];
-        
-            elements.forEach(element => {
-                this.elements.labels.push(element);
-                this.elements.labelsContainer.appendChild(element);
-            });
+            if (bottomLabel) {
+                this.elements.labels.push(bottomLabel);
+                this.elements.labelsContainer.appendChild(bottomLabel);
+            }
         }
     }
 
@@ -280,21 +259,120 @@ export class GeoGrid {
         this.elements.labels = [];
         this.elements.labelsContainer.innerHTML = '';
     }
+
+    private drawBottomLabel(currentLongitude: number, bottomMostNotOcludedLatitude: number | undefined, bounds: LngLatBounds) {
+        if (!bottomMostNotOcludedLatitude) {
+            return;
+        }
+        const mostSouthNotOccludedLat = bottomMostNotOcludedLatitude % -90;
+        console.log(bottomMostNotOcludedLatitude);
+
+        // The case when the bottom of the screen is beyond (on the other side) the south pole in the globe projection.
+        if (mostSouthNotOccludedLat > bounds.getSouth()) {
+            return;
+        }
+
+        const x = this.map.project([currentLongitude, bounds.getSouth()]).x;
+        const isBottomYOccluded = this.map.transform.isLocationOccluded(this.map.unproject([x, this.map.getCanvas().offsetHeight]));
+
+        if (isBottomYOccluded) {
+            return;
+        }
+
+        return createLabelElement(
+            currentLongitude,
+            x,
+            0,
+            'bottom',
+            this.config.formatLabels
+        );
+    }
+
+    private drawTopLabel(currentLongitude: number, topMostNotOcludedLatitute: number | undefined, bounds: LngLatBounds) {
+        if (!topMostNotOcludedLatitute) {
+            return;
+        }
+
+        const mostNorthNotOccludedLat = topMostNotOcludedLatitute % 90;
+
+        // The case when top of the screen is beyond (on the other side) north pole in the globe projection.
+        if (mostNorthNotOccludedLat < bounds.getNorth()) {
+            return;
+        }
+
+        const x = this.map.project([currentLongitude, bounds.getNorth()]).x;
+        const isTopYOccluded = this.map.transform.isLocationOccluded(this.map.unproject([x, 0]));
+
+        if (isTopYOccluded) {
+            return;
+        }
+
+        return createLabelElement(
+            currentLongitude,
+            x,
+            0,
+            'top',
+            this.config.formatLabels
+        );
+    }
 }
 
 
-const calculateTopMostNotOcludedLatitude = (map: Map, longitude: number) => {
-    const notOcludedLatitutes = [];
+const calculateTopMostNotOcludedLatitude = (map: Map, topMostNotOcludedLatitute: numberlongitude: number) => {
+    let lat = undefined;
     const centerLat =  map.getCenter().lat
     for (let latitude = centerLat; latitude < Math.min(centerLat + 90, 85); latitude+=0.1) {
         const isOccluded = map.transform.isLocationOccluded({ lng: longitude, lat: latitude});
         // console.log(isOccluded, [currentLongitude, latitude]);
         if (!isOccluded) {
-            notOcludedLatitutes.push(latitude);
-        } else {
-            break;
+            lat = latitude
         }
     }
 
-    return notOcludedLatitutes
+    return lat;
 }
+
+const calculateBottomMostNotOcludedLatitude = (map: Map, longitude: number) => {
+    let lat = undefined;
+    const centerLat =  map.getCenter().lat
+    for (let latitude = centerLat; latitude > Math.min(centerLat - 90, -85); latitude-=1) {
+        const isOccluded = map.transform.isLocationOccluded({ lng: longitude, lat: latitude});
+        if (!isOccluded) {
+            lat = latitude        }
+    }
+
+    return lat
+}
+
+
+const calculateNotOccludedLatitudes = (map: Map, longitude: number) => {
+    let topLat = undefined;
+    let bottomLat = undefined;
+
+    const centerLat = map.getCenter().lat;
+    const maxTopLat = Math.min(centerLat + 90, 85);
+    const maxBottomLat = Math.max(centerLat - 90, -85);
+    let step = 0.1;
+
+    for (let offset = 0; offset <= Math.max(maxTopLat - centerLat, centerLat - maxBottomLat); offset += step) {
+        // Check the top latitude
+        const topCandidate = centerLat + offset;
+        if (topLat === undefined && topCandidate <= maxTopLat) {
+            const isTopOccluded = map.transform.isLocationOccluded({ lng: longitude, lat: topCandidate });
+            if (!isTopOccluded) {
+                topLat = topCandidate;
+            }
+        }
+
+        // Check the bottom latitude
+        const bottomCandidate = centerLat - offset;
+        if (bottomLat === undefined && bottomCandidate >= maxBottomLat) {
+            const isBottomOccluded = map.transform.isLocationOccluded({ lng: longitude, lat: bottomCandidate });
+            if (!isBottomOccluded) {
+                bottomLat = bottomCandidate;
+            }
+        }
+    }
+
+    return { topLat, bottomLat };
+};
