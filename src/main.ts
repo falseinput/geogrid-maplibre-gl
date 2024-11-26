@@ -201,37 +201,49 @@ export class GeoGrid {
     }
 
     private drawLabels = (densityInDegrees: number) => {
-        const isGlobeProjection = this.map.getStyle().projection?.type === 'globe';
-
         const currentZoomLevel = Math.floor(this.map.getZoom());
-        if (currentZoomLevel < this.config.zoomLevelRange[0] || currentZoomLevel > this.config.zoomLevelRange[1]) {
+        const isInZoomLevelRange = currentZoomLevel >= this.config.zoomLevelRange[0] || currentZoomLevel <= this.config.zoomLevelRange[1];
+
+        if (!isInZoomLevelRange) {
             return;
         }
 
         const bounds = this.map.getBounds();
+        const isGlobeProjection = this.map.getStyle().projection?.type === 'globe';
         let currentLattitude = Math.ceil(bounds.getSouth() / densityInDegrees) * densityInDegrees;
-        for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {  
-            const y = this.map.project([0, currentLattitude]).y;
-            const elements = [
-                createLabelElement(currentLattitude, 0, y, 'left', this.config.formatLabels),
-                createLabelElement(currentLattitude, 0, y, 'right', this.config.formatLabels),
-            ];
+        for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {
+            if (isGlobeProjection) {
+                const leftLabel = this.drawLeftLabel(currentLattitude);
+                if (leftLabel) {
+                    this.elements.labels.push(leftLabel);
+                    this.elements.labelsContainer.appendChild(leftLabel);
+                }
 
-            elements.forEach(element => {
-                this.elements.labels.push(element);
-                this.elements.labelsContainer.appendChild(element);
-            })
+                const rightLabel = this.drawRightLabel(currentLattitude);
+                if (rightLabel) {
+                    this.elements.labels.push(rightLabel);
+                    this.elements.labelsContainer.appendChild(rightLabel);
+                }
+            } else {
+                const y = this.map.project([0, currentLattitude]).y;
+
+                const elements = [
+                    createLabelElement(currentLattitude, 0, y, 'left', this.config.formatLabels),
+                    createLabelElement(currentLattitude, 0, y, 'right', this.config.formatLabels),
+                ];
+
+                elements.forEach(element => {
+                    this.elements.labels.push(element);
+                    this.elements.labelsContainer.appendChild(element);
+                });
+            }
         }
 
         let currentLongitude = Math.ceil(bounds.getWest() / densityInDegrees) * densityInDegrees;
-   
         for (; currentLongitude < bounds.getEast(); currentLongitude += densityInDegrees) {
-
             if (isGlobeProjection) {
-                const topLat = calculateTopMostNotOcludedLatitude(this.map, currentLongitude);
-                const bottomLat = calculateBottomMostNotOcludedLatitude(this.map, currentLongitude);
-                const topLabel = this.drawTopLabel(currentLongitude, topLat, bounds);
-                const bottomLabel = this.drawBottomLabel(currentLongitude, bottomLat, bounds);
+                const topLabel = this.drawTopLabel(currentLongitude, bounds);
+                const bottomLabel = this.drawBottomLabel(currentLongitude, bounds);
  
                 if (topLabel) {
                     this.elements.labels.push(topLabel);
@@ -244,7 +256,7 @@ export class GeoGrid {
             } else {
                 const x = this.map.project([currentLongitude, 0]).x;
                 const topLabel = createLabelElement(currentLongitude, x, 0, 'top', this.config.formatLabels);
-                const bottomLabel = createLabelElement(currentLongitude, x, 0, 'bottom', this.config.formatLabels),
+                const bottomLabel = createLabelElement(currentLongitude, x, 0, 'bottom', this.config.formatLabels);
 
                 this.elements.labels.push(topLabel);
                 this.elements.labels.push(bottomLabel);
@@ -280,12 +292,13 @@ export class GeoGrid {
         this.elements.labelsContainer.innerHTML = '';
     }
 
-    private drawBottomLabel(currentLongitude: number, bottomMostNotOcludedLatitude: number | undefined, bounds: LngLatBounds) {
+    private drawBottomLabel(currentLongitude: number, bounds: LngLatBounds) {
+        const bottomMostNotOcludedLatitude = calculateBottomMostNotOcludedLatitude(this.map, currentLongitude);
         if (!bottomMostNotOcludedLatitude) {
             return;
         }
-        const mostSouthNotOccludedLat = bottomMostNotOcludedLatitude % -90;
 
+        const mostSouthNotOccludedLat = bottomMostNotOcludedLatitude % -90;
         // The case when the bottom of the screen is beyond (on the other side) the south pole in the globe projection.
         if (mostSouthNotOccludedLat > bounds.getSouth()) {
             return;
@@ -307,7 +320,8 @@ export class GeoGrid {
         );
     }
 
-    private drawTopLabel(currentLongitude: number, topMostNotOcludedLatitute: number | undefined, bounds: LngLatBounds) {
+    private drawTopLabel(currentLongitude: number, bounds: LngLatBounds) {
+        const topMostNotOcludedLatitute = calculateTopMostNotOcludedLatitude(this.map, currentLongitude);
         if (!topMostNotOcludedLatitute) {
             return;
         }
@@ -334,6 +348,52 @@ export class GeoGrid {
             this.config.formatLabels
         );
     }
+
+    private drawLeftLabel(currentLatitude: number) {
+        const leftMostNotOcludedLongitude = calculateLeftMostNotOcludedLongitude(this.map, currentLatitude);
+        if (leftMostNotOcludedLongitude === undefined) {
+            return;
+        }
+
+        const edgeIntersectionLng = findLeftEdgeLongitude(this.map, currentLatitude);
+        if (edgeIntersectionLng === null) {
+            return;
+        }
+
+        const x = 0;
+        const y = this.map.project([edgeIntersectionLng, currentLatitude]).y;
+        return createLabelElement(
+            currentLatitude,
+            x,
+            y,
+            'left',
+            this.config.formatLabels
+        );
+    }
+
+    private drawRightLabel(currentLatitude: number) {
+        const rightMostNotOccludedLongitude = calculateRightMostNotOccludedLongitude(this.map, currentLatitude);
+
+        if (rightMostNotOccludedLongitude === undefined) {
+            return;
+        }
+
+        const edgeIntersectionLng = findRightEdgeLongitude(this.map, currentLatitude);
+
+        if (edgeIntersectionLng === null) {
+            return;
+        }
+
+        const x = 0;
+        const y = this.map.project([edgeIntersectionLng, currentLatitude]).y;
+        return createLabelElement(
+            currentLatitude,
+            x,
+            y,
+            'right',
+            this.config.formatLabels
+        );
+    }
 }
 
 const calculateTopMostNotOcludedLatitude = (map: Map, longitude: number) => {
@@ -350,6 +410,36 @@ const calculateTopMostNotOcludedLatitude = (map: Map, longitude: number) => {
     return result;
 }
 
+const calculateLeftMostNotOcludedLongitude = (map: Map, latitude: number) => {
+    let result = undefined;
+    const step = 0.5;
+    const centerLng =  map.getCenter().lng;
+    for (let longitude = centerLng; longitude > centerLng -90; longitude -= step) {
+        const isOccluded = map.transform.isLocationOccluded({ lng: longitude, lat: latitude});
+        if (!isOccluded) {
+            result = longitude
+        }
+    }
+
+    return result;
+}
+
+const calculateRightMostNotOccludedLongitude = (map: Map, latitude: number) => {
+    let result = undefined;
+    const step = 0.5;
+    const centerLng = map.getCenter().lng;
+
+    for (let longitude = centerLng; longitude < centerLng + 90; longitude += step) {
+        const isOccluded = map.transform.isLocationOccluded({ lng: longitude, lat: latitude });
+        if (!isOccluded) {
+            result = longitude;
+        }
+    }
+
+    return result;
+};
+
+
 const calculateBottomMostNotOcludedLatitude = (map: Map, longitude: number) => {
     let result = undefined;
     const step = map.getZoom() > 12 ? 0.01 : 1;
@@ -362,4 +452,50 @@ const calculateBottomMostNotOcludedLatitude = (map: Map, longitude: number) => {
     }
 
     return result;
+}
+
+const findLeftEdgeLongitude = (map: Map, latitude: number) => {
+    let lng = map.getCenter().lng;
+    let intersects = false;
+    const maxIterations = 180;
+    let it = 0;
+    // We are limiting the loop because some meridians may never intersect with the screen edge
+    // and will pass the break condition (x <= 0)
+    while (it < maxIterations) {
+        lng--;
+
+        const x = map.project([lng, latitude]).x;
+        if (x <= 0) {
+            intersects = true;
+            break;
+        }
+
+        it++;
+    }
+
+    return intersects ? lng : null;
+}
+
+const findRightEdgeLongitude = (map: Map, latitude: number) => {
+    let lng = map.getCenter().lng;
+    let intersects = false;
+    const maxIterations = 180;
+    let it = 0;
+    const screenWidth = map.getContainer().offsetWidth;
+
+    // Limiting the loop because some meridians may never intersect with the screen edge
+    // and will pass the break condition (x <= 0)
+    while (it < maxIterations) {
+        lng++;
+
+        const x = map.project([lng, latitude]).x;
+        if (x >= screenWidth) {
+            intersects = true;
+            break;
+        }
+
+        it++;
+    }
+
+    return intersects ? lng : null;
 }
