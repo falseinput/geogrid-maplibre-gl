@@ -3,11 +3,12 @@
 
 **GeoGrid** is a MapLibre GL JS plugin for adding a highly customizable geographic grid (graticule) to your map.
 
-![GeoGrid example](./assets/geogrid.png)  
+![GeoGrid example](./assets/geogrid.jpg)
 
 ## Features  
 
 - **Display Geographic Grid**: Adds a grid with labeled coordinates to the map.
+- **Globe Projection Support** - Works with globe projection in maplibre-gl-js 5.x.
 - **Customizable Grid Density**: Adjust grid density dynamically based on zoom level.
 - **Zoom Level Visibility Range**: Control grid visibility with the `zoomLevelRange` option.
 - **Custom Label Formats**: Change the label format to suit your needs. Default format:  
@@ -17,7 +18,7 @@
 - **Layer Placement Control**: Place grid lines under any existing map layer using `beforeLayerId`.
 - **Dynamic Label Visibility**: Labels automatically hide when the map is rotated away from north.
 - **Optimized Performance**: Only elements visible in the viewport are rendered, ensuring no performance impact.
-- **Easy Removal**: Remove the grid programmatically using the `remove()` method.  
+- **Easy Removal**: Remove the grid programmatically using the `remove()` method.
 - **TypeScript Support**: Includes TypeScript definitions for better development experience.
 - **ES Module Ready**: Available as a JavaScript module for modern workflows.
 
