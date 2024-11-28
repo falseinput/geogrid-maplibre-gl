@@ -23,8 +23,6 @@ export const createLabelElement = (
     const el = document.createElement('div');
     el.classList.add(classnames.label, `${classnames.label}--${align}`);
 
-    console.log(labelStyle);
-
     if (labelStyle.color) {
         el.style.color = labelStyle.color;
     }
