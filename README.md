@@ -5,10 +5,10 @@
 
 ![GeoGrid example](./assets/geogrid.jpg)
 
-## Features  
+## Features
 
 - **Display Geographic Grid**: Adds a grid with labeled coordinates to the map.
-- **Globe Projection Support** - Works with globe projection in maplibre-gl-js 5.x.
+- **[Experimental] Globe Projection Support** - Works with globe projection in maplibre-gl-js 5.x.
 - **Customizable Grid Density**: Adjust grid density dynamically based on zoom level.
 - **Zoom Level Visibility Range**: Control grid visibility with the `zoomLevelRange` option.
 - **Custom Label Formats**: Change the label format to suit your needs. Default format:  
