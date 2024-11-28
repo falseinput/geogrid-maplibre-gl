@@ -13,8 +13,7 @@
 - **Zoom Level Visibility Range**: Control grid visibility with the `zoomLevelRange` option.
 - **Custom Label Formats**: Change the label format to suit your needs. Default format:  
   ```[degrees]° [minutes]’ [seconds]’’```
-- **CSS Label Styling**: Easily style labels using CSS (e.g., text shadows, blending modes).
-- **Flexible Grid Styling**: Modify grid line color and width via the API.
+- **Flexible Styling**: Modify grid and labels styles using JS API. For advanced use cases, override container and label CSS.
 - **Layer Placement Control**: Place grid lines under any existing map layer using `beforeLayerId`.
 - **Dynamic Label Visibility**: Labels automatically hide when the map is rotated away from north.
 - **Optimized Performance**: Only elements visible in the viewport are rendered, ensuring no performance impact.
@@ -61,9 +60,15 @@ import { GeoGrid } from 'geogrid-maplibre-gl';
 new GeoGrid({ 
     map,
     beforeLayerId: 'labels'
-    style: {
+    gridStyle: {
         color: 'rgba(255, 255, 255, 0.5)'
-        width: 2
+        width: 2,
+        dasharray: [5, 10]
+    },
+    labelStyle: {
+        color: 'rgba(255, 255, 255, 0.5)',
+        fontSize: 18,
+        textShadow: '0 0 10px rgba(0, 0, 0)'
     },
     zoomLevelRange: [0, 13],
     gridDensity: (zoomLevel) => 10;
@@ -85,7 +90,10 @@ geogrid.add();
 
 ## Styling
 
-Customize the appearance of the grid labels by overriding the following CSS classes:
+Most of the styling can be done with API options `gridStyle` and `labelStyle`.
+
+If those options are not enough, it is possible to override CSS classes:
+
 * `geogrid` - The main container for labels.
 * `geogrid__label` - Invidual label elements.
 * `geogrid__label--left` - Labels on the left.
