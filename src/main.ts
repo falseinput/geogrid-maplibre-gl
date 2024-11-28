@@ -1,4 +1,4 @@
-import { FilterSpecification, GeoJSONSource, Map } from 'maplibre-gl';
+import { FilterSpecification, GeoJSONSource, LngLatBounds, Map } from 'maplibre-gl';
 import { classnames, PLUGIN_PREFIX } from './constants';
 import { Elements } from './types';
 import { createMultiLineString } from './helpers/geojson';
@@ -6,6 +6,7 @@ import { createMeridiansGeometry, createParallelsGeometry } from './helpers/geom
 import { createLabelElement, createLabelsContainerElement } from './helpers/html';
 import { getGridDensity } from './helpers/get-grid-density';
 import { formatDegrees } from './helpers/formatters';
+import { calculateBottomMostNotOcludedLatitude, calculateLeftEdgeLongitude, calculateLeftMostNotOcludedLongitude, calculateRightEdgeLongitude, calculateRightMostNotOccludedLongitude, calculateTopMostNotOcludedLatitude } from './helpers/calculations';
 
 export interface GridStyle {
     color?: string,
@@ -109,6 +110,7 @@ export class GeoGrid {
         this.map.getContainer().appendChild(this.elements.labelsContainer);
         this.map.on('move', this.onMove);
         this.map.on('remove', this.removeEventListeners);
+        this.map.on('projectiontransition', this.onProjectionTransition);
 
         const densityInDegrees = this.config.gridDensity(Math.floor(this.map.getZoom()));
         this.addLayersAndSources(densityInDegrees);
@@ -143,6 +145,10 @@ export class GeoGrid {
         const densityInDegrees = this.config.gridDensity(Math.floor(this.map.getZoom()));
         this.drawLabels(densityInDegrees);
         this.updateGrid(densityInDegrees);
+    }
+
+    private onProjectionTransition = () => {
+        this.onMove();
     }
 
     private addLayersAndSources = (densityInDegrees: number) => {
@@ -197,37 +203,67 @@ export class GeoGrid {
 
     private drawLabels = (densityInDegrees: number) => {
         const currentZoomLevel = Math.floor(this.map.getZoom());
-        if (currentZoomLevel < this.config.zoomLevelRange[0] || currentZoomLevel > this.config.zoomLevelRange[1]) {
+        const isInZoomLevelRange = currentZoomLevel >= this.config.zoomLevelRange[0] || currentZoomLevel <= this.config.zoomLevelRange[1];
+
+        if (!isInZoomLevelRange) {
             return;
         }
 
         const bounds = this.map.getBounds();
+        const isGlobeProjection = this.map.getStyle().projection?.type === 'globe';
         let currentLattitude = Math.ceil(bounds.getSouth() / densityInDegrees) * densityInDegrees;
-        for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {  
-            const y = this.map.project([0, currentLattitude]).y;
-            const elements = [
-                createLabelElement(currentLattitude, 0, y, 'left', this.config.formatLabels),
-                createLabelElement(currentLattitude, 0, y, 'right', this.config.formatLabels),
-            ];
+        for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {
+            if (isGlobeProjection) {
+                const leftLabel = this.drawLeftLabel(currentLattitude);
+                if (leftLabel) {
+                    this.elements.labels.push(leftLabel);
+                    this.elements.labelsContainer.appendChild(leftLabel);
+                }
 
-            elements.forEach(element => {
-                this.elements.labels.push(element);
-                this.elements.labelsContainer.appendChild(element);
-            })
+                const rightLabel = this.drawRightLabel(currentLattitude);
+                if (rightLabel) {
+                    this.elements.labels.push(rightLabel);
+                    this.elements.labelsContainer.appendChild(rightLabel);
+                }
+            } else {
+                const y = this.map.project([0, currentLattitude]).y;
+
+                const elements = [
+                    createLabelElement(currentLattitude, 0, y, 'left', this.config.formatLabels),
+                    createLabelElement(currentLattitude, 0, y, 'right', this.config.formatLabels),
+                ];
+
+                elements.forEach(element => {
+                    this.elements.labels.push(element);
+                    this.elements.labelsContainer.appendChild(element);
+                });
+            }
         }
 
         let currentLongitude = Math.ceil(bounds.getWest() / densityInDegrees) * densityInDegrees;
         for (; currentLongitude < bounds.getEast(); currentLongitude += densityInDegrees) {
-            const x = this.map.project([currentLongitude, 0]).x;
-            const elements = [
-                createLabelElement(currentLongitude, x, 0, 'top', this.config.formatLabels),
-                createLabelElement(currentLongitude, x, 0, 'bottom', this.config.formatLabels),
-            ];
-        
-            elements.forEach(element => {
-                this.elements.labels.push(element);
-                this.elements.labelsContainer.appendChild(element);
-            });
+            if (isGlobeProjection) {
+                const topLabel = this.drawTopLabel(currentLongitude, bounds);
+                const bottomLabel = this.drawBottomLabel(currentLongitude, bounds);
+ 
+                if (topLabel) {
+                    this.elements.labels.push(topLabel);
+                    this.elements.labelsContainer.appendChild(topLabel);
+                }
+                if (bottomLabel) {
+                    this.elements.labels.push(bottomLabel);
+                    this.elements.labelsContainer.appendChild(bottomLabel);
+                }
+            } else {
+                const x = this.map.project([currentLongitude, 0]).x;
+                const topLabel = createLabelElement(currentLongitude, x, 0, 'top', this.config.formatLabels);
+                const bottomLabel = createLabelElement(currentLongitude, x, 0, 'bottom', this.config.formatLabels);
+
+                this.elements.labels.push(topLabel);
+                this.elements.labels.push(bottomLabel);
+                this.elements.labelsContainer.appendChild(topLabel);
+                this.elements.labelsContainer.appendChild(bottomLabel);
+            }
         }
     }
 
@@ -256,4 +292,108 @@ export class GeoGrid {
         this.elements.labels = [];
         this.elements.labelsContainer.innerHTML = '';
     }
+
+    private drawBottomLabel(currentLongitude: number, bounds: LngLatBounds) {
+        const bottomMostNotOcludedLatitude = calculateBottomMostNotOcludedLatitude(this.map, currentLongitude);
+        if (!bottomMostNotOcludedLatitude) {
+            return;
+        }
+
+        const mostSouthNotOccludedLat = bottomMostNotOcludedLatitude % -90;
+        // The case when the bottom of the screen is beyond (on the other side) the south pole in the globe projection.
+        if (mostSouthNotOccludedLat > bounds.getSouth()) {
+            return;
+        }
+
+        const x = this.map.project([currentLongitude, bounds.getSouth()]).x;
+        const isBottomYOccluded = this.map.transform.isLocationOccluded(this.map.unproject([x, this.map.getCanvas().offsetHeight]));
+
+         if (isBottomYOccluded) {
+            return;
+        }
+
+        return createLabelElement(
+            currentLongitude,
+            x,
+            0,
+            'bottom',
+            this.config.formatLabels
+        );
+    }
+
+    private drawTopLabel(currentLongitude: number, bounds: LngLatBounds) {
+        const topMostNotOcludedLatitute = calculateTopMostNotOcludedLatitude(this.map, currentLongitude);
+        if (!topMostNotOcludedLatitute) {
+            return;
+        }
+
+        const mostNorthNotOccludedLat = topMostNotOcludedLatitute % 90;
+
+        // The case when top of the screen is beyond (on the other side) north pole in the globe projection.
+        if (mostNorthNotOccludedLat < bounds.getNorth()) {
+            return;
+        }
+
+        const x = this.map.project([currentLongitude, bounds.getNorth()]).x;
+        const isTopYOccluded = this.map.transform.isLocationOccluded(this.map.unproject([x, 0]));
+
+        if (isTopYOccluded) {
+            return;
+        }
+
+        return createLabelElement(
+            currentLongitude,
+            x,
+            0,
+            'top',
+            this.config.formatLabels
+        );
+    }
+
+    private drawLeftLabel(currentLatitude: number) {
+        const leftMostNotOcludedLongitude = calculateLeftMostNotOcludedLongitude(this.map, currentLatitude);
+        if (leftMostNotOcludedLongitude === undefined) {
+            return;
+        }
+
+        const edgeIntersectionLng = calculateLeftEdgeLongitude(this.map, currentLatitude);
+        if (edgeIntersectionLng === null) {
+            return;
+        }
+
+        const x = 0;
+        const y = this.map.project([edgeIntersectionLng, currentLatitude]).y;
+        return createLabelElement(
+            currentLatitude,
+            x,
+            y,
+            'left',
+            this.config.formatLabels
+        );
+    }
+
+    private drawRightLabel(currentLatitude: number) {
+        const rightMostNotOccludedLongitude = calculateRightMostNotOccludedLongitude(this.map, currentLatitude);
+
+        if (rightMostNotOccludedLongitude === undefined) {
+            return;
+        }
+
+        const edgeIntersectionLng = calculateRightEdgeLongitude(this.map, currentLatitude);
+
+        if (edgeIntersectionLng === null) {
+            return;
+        }
+
+        const x = 0;
+        const y = this.map.project([edgeIntersectionLng, currentLatitude]).y;
+        return createLabelElement(
+            currentLatitude,
+            x,
+            y,
+            'right',
+            this.config.formatLabels
+        );
+    }
 }
+
