@@ -1,9 +1,5 @@
 
-.geogrid .geogrid__label {
-    text-shadow: 0px 0px 2px #fff;
-    font-size: 14px;
-    font-weight: bold;
-}
+.geogrid .geogrid__label {}
 
 .geogrid  .geogrid__label--top,
 .geogrid .geogrid__label--bottom {

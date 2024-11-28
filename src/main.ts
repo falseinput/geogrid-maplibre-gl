@@ -9,8 +9,19 @@ import { formatDegrees } from './helpers/formatters';
 import { calculateBottomMostNotOcludedLatitude, calculateLeftEdgeLongitude, calculateLeftMostNotOcludedLongitude, calculateRightEdgeLongitude, calculateRightMostNotOccludedLongitude, calculateTopMostNotOcludedLatitude } from './helpers/calculations';
 
 export interface GridStyle {
-    color?: string,
+    color?: string;
     width?: number;
+    /**
+     * Specifies the lengths of the alternating dashes and gaps that form the dash pattern.
+     */
+    dasharray?: number[];
+}
+
+export interface LabelStyle {
+    color?: string;
+    fontSize?: string;
+    fontFamily?: string;
+    textShadow?: string;
 }
 
 export interface GeoGridOptions {
@@ -25,15 +36,30 @@ export interface GeoGridOptions {
      */
     beforeLayerId?: string | undefined;
    /**
+     @deprecated Use gridStyle
+     */
+    style?: GridStyle
+    /**
      * The style options for the grid lines.
      * @default { color: '#000000', width: 1 }
      * @example
      * {
      *   color: '#ff0000',
-     *   width: 2
+     *   width: 2,
+     *   dasharray: [5, 10]
      * }
      */
-    style?: GridStyle
+    gridStyle?: GridStyle
+    /**
+     * Style of the coordinate labels.
+     * @example
+     * {
+     *   color: 'red',
+     *   fontSize: '18px',
+     *   fontFamily: 'Open Sans'
+     * }
+     */
+    labelStyle?: LabelStyle;
     /**
      * The zoom level range within which the grid is visible.
      * Defined as an array [minZoom, maxZoom].
@@ -70,8 +96,10 @@ export class GeoGrid {
         meridiansSourceName: `${PLUGIN_PREFIX}_meridians_source`,
         style: {
             color: '#000000',
-            width: 1
+            width: 1,
+            dasharray: undefined as number[] | undefined
         },
+        labelStyle: {} as LabelStyle,
         gridDensity: getGridDensity,
         formatLabels: formatDegrees
     };
@@ -88,8 +116,13 @@ export class GeoGrid {
         this.map = options.map;
         this.config.beforeLayerId = options.beforeLayerId || this.config.beforeLayerId;
         this.config.zoomLevelRange = options.zoomLevelRange || this.config.zoomLevelRange;
-        this.config.style.color = options.style?.color || this.config.style.color;
-        this.config.style.width = options.style?.width || this.config.style.width;
+        this.config.style.color = options.gridStyle?.color || options.style?.color || this.config.style.color;
+        this.config.style.width = options.gridStyle?.width || options.style?.width || this.config.style.width;
+        this.config.style.dasharray = options.gridStyle?.dasharray || options.style?.dasharray || this.config.style.dasharray;
+        this.config.labelStyle.color = options.labelStyle?.color;
+        this.config.labelStyle.fontSize = options.labelStyle?.fontSize;
+        this.config.labelStyle.fontFamily = options.labelStyle?.fontFamily;
+        this.config.labelStyle.textShadow = options.labelStyle?.textShadow;
         this.config.formatLabels = options.formatLabels || this.config.formatLabels;
         this.config.gridDensity = options.gridDensity || this.config.gridDensity;
 
@@ -175,7 +208,8 @@ export class GeoGrid {
             source: this.config.parallersSourceName,
             paint: {
                 'line-color': this.config.style.color,
-                'line-width': this.config.style.width
+                'line-width': this.config.style.width,
+                ...(this.config.style.dasharray && { 'line-dasharray': this.config.style.dasharray })
             }
         }, this.config.beforeLayerId);
 
@@ -194,7 +228,8 @@ export class GeoGrid {
             source: this.config.meridiansSourceName,
             paint: {
                 'line-color': this.config.style.color,
-                'line-width': this.config.style.width
+                'line-width': this.config.style.width,
+                ...(this.config.style.dasharray && { 'line-dasharray': this.config.style.dasharray })
             }
         }, this.config.beforeLayerId);
 
@@ -229,8 +264,22 @@ export class GeoGrid {
                 const y = this.map.project([0, currentLattitude]).y;
 
                 const elements = [
-                    createLabelElement(currentLattitude, 0, y, 'left', this.config.formatLabels),
-                    createLabelElement(currentLattitude, 0, y, 'right', this.config.formatLabels),
+                    createLabelElement(
+                        currentLattitude,
+                        0,
+                        y,
+                        'left', 
+                        this.config.formatLabels,
+                        this.config.labelStyle
+                    ),
+                    createLabelElement(
+                        currentLattitude,
+                        0,
+                        y,
+                        'right',
+                        this.config.formatLabels,
+                        this.config.labelStyle
+                    ),
                 ];
 
                 elements.forEach(element => {
@@ -256,8 +305,22 @@ export class GeoGrid {
                 }
             } else {
                 const x = this.map.project([currentLongitude, 0]).x;
-                const topLabel = createLabelElement(currentLongitude, x, 0, 'top', this.config.formatLabels);
-                const bottomLabel = createLabelElement(currentLongitude, x, 0, 'bottom', this.config.formatLabels);
+                const topLabel = createLabelElement(
+                    currentLongitude,
+                    x,
+                    0,
+                    'top',
+                    this.config.formatLabels,
+                    this.config.labelStyle
+                );
+                const bottomLabel = createLabelElement(
+                    currentLongitude,
+                    x,
+                    0,
+                    'bottom',
+                    this.config.formatLabels,
+                    this.config.labelStyle
+                );
 
                 this.elements.labels.push(topLabel);
                 this.elements.labels.push(bottomLabel);
@@ -317,7 +380,8 @@ export class GeoGrid {
             x,
             0,
             'bottom',
-            this.config.formatLabels
+            this.config.formatLabels,
+            this.config.labelStyle
         );
     }
 
@@ -346,7 +410,8 @@ export class GeoGrid {
             x,
             0,
             'top',
-            this.config.formatLabels
+            this.config.formatLabels,
+            this.config.labelStyle
         );
     }
 
@@ -368,7 +433,8 @@ export class GeoGrid {
             x,
             y,
             'left',
-            this.config.formatLabels
+            this.config.formatLabels,
+            this.config.labelStyle
         );
     }
 
@@ -392,7 +458,8 @@ export class GeoGrid {
             x,
             y,
             'right',
-            this.config.formatLabels
+            this.config.formatLabels,
+            this.config.labelStyle
         );
     }
 }
