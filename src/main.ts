@@ -369,7 +369,7 @@ export class GeoGrid {
         }
 
         const x = this.map.project([currentLongitude, bounds.getSouth()]).x;
-        const isBottomYOccluded = this.map.transform.isLocationOccluded(this.map.unproject([x, this.map.getCanvas().offsetHeight]));
+        const isBottomYOccluded = this.map.transform.isLocationOccluded?.(this.map.unproject([x, this.map.getCanvas().offsetHeight]));
 
          if (isBottomYOccluded) {
             return;
@@ -399,7 +399,7 @@ export class GeoGrid {
         }
 
         const x = this.map.project([currentLongitude, bounds.getNorth()]).x;
-        const isTopYOccluded = this.map.transform.isLocationOccluded(this.map.unproject([x, 0]));
+        const isTopYOccluded = this.map.transform.isLocationOccluded?.(this.map.unproject([x, 0]));
 
         if (isTopYOccluded) {
             return;
