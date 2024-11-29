@@ -1,6 +1,6 @@
 {
   "name": "geogrid-maplibre-gl",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "GeoGrid is a MapLibre GL JS plugin for adding a highly customizable geographic grid (graticule) to your map.",
   "main": "dist/index.js",
   "scripts": {
