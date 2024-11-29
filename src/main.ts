@@ -245,6 +245,7 @@ export class GeoGrid {
         }
 
         const bounds = this.map.getBounds();
+        // @ts-expect-error
         const isGlobeProjection = this.map.getStyle().projection?.type === 'globe';
         let currentLattitude = Math.ceil(bounds.getSouth() / densityInDegrees) * densityInDegrees;
         for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {
@@ -369,6 +370,7 @@ export class GeoGrid {
         }
 
         const x = this.map.project([currentLongitude, bounds.getSouth()]).x;
+        // @ts-expect-error
         const isBottomYOccluded = this.map.transform.isLocationOccluded?.(this.map.unproject([x, this.map.getCanvas().offsetHeight]));
 
          if (isBottomYOccluded) {
@@ -399,6 +401,7 @@ export class GeoGrid {
         }
 
         const x = this.map.project([currentLongitude, bounds.getNorth()]).x;
+        // @ts-expect-error
         const isTopYOccluded = this.map.transform.isLocationOccluded?.(this.map.unproject([x, 0]));
 
         if (isTopYOccluded) {

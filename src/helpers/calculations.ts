@@ -5,6 +5,7 @@ export const calculateTopMostNotOcludedLatitude = (map: Map, longitude: number) 
     const step = map.getZoom() > 12 ? 0.01 : 1;
     const centerLat =  map.getCenter().lat
     for (let latitude = centerLat; latitude < 85; latitude += step) {
+        // @ts-expect-error
         const isOccluded = map.transform.isLocationOccluded?.({ lng: longitude, lat: latitude});
         if (!isOccluded) {
             result = latitude
@@ -19,6 +20,7 @@ export const calculateLeftMostNotOcludedLongitude = (map: Map, latitude: number)
     const step = 0.5;
     const centerLng =  map.getCenter().lng;
     for (let longitude = centerLng; longitude > centerLng -90; longitude -= step) {
+        // @ts-expect-error
         const isOccluded = map.transform.isLocationOccluded?.({ lng: longitude, lat: latitude});
         if (!isOccluded) {
             result = longitude
@@ -34,6 +36,7 @@ export const calculateRightMostNotOccludedLongitude = (map: Map, latitude: numbe
     const centerLng = map.getCenter().lng;
 
     for (let longitude = centerLng; longitude < centerLng + 90; longitude += step) {
+        // @ts-expect-error
         const isOccluded = map.transform.isLocationOccluded({ lng: longitude, lat: latitude });
         if (!isOccluded) {
             result = longitude;
@@ -49,6 +52,7 @@ export const calculateBottomMostNotOcludedLatitude = (map: Map, longitude: numbe
     const step = map.getZoom() > 12 ? 0.01 : 1;
     const centerLat =  map.getCenter().lat
     for (let latitude = centerLat; latitude > -85; latitude -= step) {
+        // @ts-expect-error
         const isOccluded = map.transform.isLocationOccluded?.({ lng: longitude, lat: latitude});
         if (!isOccluded) {
             result = latitude
