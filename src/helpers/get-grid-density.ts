@@ -31,7 +31,7 @@ export function getGridDensity(zoom: number): number {
       case 14:
         return 0.025;
       default:
-        return 0.01;
+        return 30;
     }
   }
   
