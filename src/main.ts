@@ -69,7 +69,8 @@ export interface GeoGridOptions {
    /**
      * A function that defines the density of the grid lines.
      * The density is the distance between grid lines, measured in degrees.
-     * @param zoomLevel The current zoom level of the map.
+     * @param zoomLevel The current zoom level of the map. 
+     * In the globe projection, zoom can be negative. Negative zoom values are clamped to 0.
      * @returns The distance between grid lines in degrees.
      */
     gridDensity?: (zoomLevel: number) => number;
@@ -145,7 +146,10 @@ export class GeoGrid {
         this.map.on('remove', this.removeEventListeners);
         this.map.on('projectiontransition', this.onProjectionTransition);
 
-        const densityInDegrees = this.config.gridDensity(Math.floor(this.map.getZoom()));
+        const densityInDegrees = this.config.gridDensity(
+            // Zoom can be negative in the globe projection, so we clamp it
+            Math.max(Math.floor(this.map.getZoom()), 0)
+        );
         this.addLayersAndSources(densityInDegrees);
     }
 
