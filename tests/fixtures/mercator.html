@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercator</title>
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="../../dist/geogrid.css" rel="stylesheet" />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script type="importmap">
+        {
+          "imports": {
+            "@mapgrab/map-interface": "https://ga.jspm.io/npm:@mapgrab/map-interface@0.0.3/index.esm.js"
+          },
+          "scopes": {
+            "https://ga.jspm.io/": {
+              "@mapbox/point-geometry": "https://ga.jspm.io/npm:@mapbox/point-geometry@1.1.0/index.js",
+              "@mapgrab/map-interface-types": "https://ga.jspm.io/npm:@mapgrab/map-interface-types@0.1.1/src/index.js",
+              "@mapgrab/map-locator": "https://ga.jspm.io/npm:@mapgrab/map-locator@0.0.2/src/index.js",
+              "@turf/bbox-clip": "https://ga.jspm.io/npm:@turf/bbox-clip@7.0.0/dist/esm/index.js",
+              "@turf/helpers": "https://ga.jspm.io/npm:@turf/helpers@7.1.0/dist/esm/index.js",
+              "@turf/invariant": "https://ga.jspm.io/npm:@turf/invariant@7.1.0/dist/esm/index.js",
+              "@turf/meta": "https://ga.jspm.io/npm:@turf/meta@7.0.0/dist/esm/index.js",
+              "tslib": "https://ga.jspm.io/npm:tslib@2.8.1/tslib.es6.mjs"
+            }
+          }
+        }
+    </script>
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script src="../../dist/index.js" type="module"></script>
+
+    <script type="module">
+        import { installMapGrab } from '@mapgrab/map-interface';
+        import { GeoGrid } from '../../dist/index.js';
+        // Initialize the map
+        const map = new maplibregl.Map({
+            container: 'map', // container id
+            style: 'https://demotiles.maplibre.org/style.json', // style URL
+            center: [0, 0], // starting position [lng, lat]
+            zoom: 2 // starting zoom
+        });
+        // map.showTileBoundaries = true;
+
+        new GeoGrid({ 
+            map
+        });
+
+        installMapGrab(map, 'mainMap');
+        console.log(installMapGrab);
+    </script>
+</body>
+</html>

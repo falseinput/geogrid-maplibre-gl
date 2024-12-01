@@ -6,12 +6,17 @@
   "scripts": {
     "start": "python3 -m http.server",
     "build": "rollup -c && tsc",
-    "watch": "rollup -c -w"
+    "watch": "rollup -c -w",
+    "test": "playwright test"
   },
   "author": "Zbigniew Matysek <matysek.zbigniew@gmail.com>",
   "repository": "https://github.com/falseinput/geogrid-maplibre-gl",
   "license": "MIT",
   "devDependencies": {
+    "@mapgrab/map-interface": "0.0.3",
+    "@mapgrab/playwright": "0.0.3",
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.1",
     "rollup": "4.25.0",
     "rollup-plugin-copy": "3.5.0",
     "rollup-plugin-node-resolve": "5.2.0",

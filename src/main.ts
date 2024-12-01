@@ -245,7 +245,6 @@ export class GeoGrid {
         }
 
         const bounds = this.map.getBounds();
-        // @ts-expect-error
         const isGlobeProjection = this.map.getStyle().projection?.type === 'globe';
         let currentLattitude = Math.ceil(bounds.getSouth() / densityInDegrees) * densityInDegrees;
         for (; currentLattitude < bounds.getNorth(); currentLattitude += densityInDegrees) {
