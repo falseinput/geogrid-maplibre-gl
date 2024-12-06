@@ -21,8 +21,14 @@ run_container() {
 }
 
 execute_tests() {
+  if [ -z "$CI" ]; then
+    TTY_FLAG="-it"
+  else
+    TTY_FLAG=""
+  fi
+
   echo "Running Playwright tests..."
-  docker exec -it $CONTAINER_NAME npm run test
+  docker exec $TTY_FLAG $CONTAINER_NAME npm run test
 }
 
 copy_screenshots() {
