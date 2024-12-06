@@ -53,6 +53,10 @@
 
         installMapGrab(map, 'mainMap');
         console.log(installMapGrab);
+
+        map.on('load', () => {
+            window.close();
+        });
     </script>
 </body>
 </html>
