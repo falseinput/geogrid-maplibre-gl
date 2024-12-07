@@ -1,6 +1,6 @@
 import { test, expect } from './setup'
 
-const pageUrl = 'http://localhost:8000/tests/fixtures/mercator.html';
+const pageUrl = 'mercator.html';
 
 test('renders grid: zl: 0', async ({ page, mapController }) => {
   const controller = () => mapController('mainMap');

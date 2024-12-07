@@ -7,7 +7,8 @@
     "start": "python3 -m http.server",
     "build": "rollup -c && tsc",
     "watch": "rollup -c -w",
-    "test": "playwright test"
+    "test:visual": "./scripts/test-visual.sh",
+    "test:visual:update": "./scripts/test-visual-update.sh"
   },
   "author": "Zbigniew Matysek <matysek.zbigniew@gmail.com>",
   "repository": "https://github.com/falseinput/geogrid-maplibre-gl",

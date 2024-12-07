@@ -1,15 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-
-const BASE_URL = 'http://localhost:8000';
+const SEVER_URL = 'http://localhost:8000'
+const BASE_URL = `${SEVER_URL}/tests/fixtures/`;
 const TEST_DIR = './tests';
 const SNAPSHOT_PATH_TEMPLATE = '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}';
 const REPORTER_HOST = '0.0.0.0';
@@ -48,7 +40,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm run start',
-    url: BASE_URL,
+    url: SEVER_URL,
     reuseExistingServer: !process.env.CI,
   },
 });

@@ -28,7 +28,7 @@ execute_tests() {
   fi
 
   echo "Running Playwright tests..."
-  docker exec $TTY_FLAG $CONTAINER_NAME npm run test
+  docker exec $TTY_FLAG $CONTAINER_NAME npx playwright test
 }
 
 copy_screenshots() {
