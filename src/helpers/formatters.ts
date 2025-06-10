@@ -4,7 +4,7 @@ export const formatDegrees = (degressFloat: number) => {
     const minutesFloat = degreessFractionalPart * 60;
     const minutes = Math.floor(minutesFloat);
     const minutesFractionalPart = minutesFloat - minutes;
-    const seconds = Math.round(minutesFractionalPart - Math.floor(minutesFractionalPart));
+    const seconds = Math.round(minutesFractionalPart * 60);
 
     let output = `${degrees.toString()}°`;
 
