@@ -173,6 +173,7 @@ export class GeoGrid {
 
     private removeEventListeners = () => {
         this.map.off('move', this.onMove);
+        this.map.off('projectiontransition', this.onProjectionTransition);
     }
 
     private onMove = () => {
