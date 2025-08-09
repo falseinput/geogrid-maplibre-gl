@@ -61,18 +61,18 @@ new GeoGrid({
     map,
     beforeLayerId: 'labels'
     gridStyle: {
-        color: 'rgba(255, 255, 255, 0.5)'
+        color: 'rgba(255, 255, 255, 0.5)',
         width: 2,
-        dasharray: [5, 10]
+        dasharray: [5, 10],
     },
     labelStyle: {
         color: 'rgba(255, 255, 255, 0.5)',
         fontSize: 18,
-        textShadow: '0 0 10px rgba(0, 0, 0)'
+        textShadow: '0 0 10px rgba(0, 0, 0)',
     },
     zoomLevelRange: [0, 13],
     gridDensity: (zoomLevel) => 10;
-    formatLabels: (degreesFloat) => Math.floor(degreesFloat);
+    formatLabels: (degreesFloat, isLongitude) => Math.floor(degreesFloat);
 });
 ```
 
@@ -106,6 +106,6 @@ To prevent overriding default properties, nest overrides inside `.geogrid-overri
 For example:
 ```css
 .geogrid-overrides .geogrid__label {
-    color: red
+    color: red;
 }
 ```
