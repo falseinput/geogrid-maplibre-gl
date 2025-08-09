@@ -81,7 +81,7 @@ export interface GeoGridOptions {
      * @param isLongitude A boolean indicating whether the label is a longitude label.
      * @returns A formatted label string.
      */
-    formatLabels?: (degreesFloat: number, ) => string
+    formatLabels?: (degreesFloat: number, isLongitude: boolean) => string
 }
 
 /**
