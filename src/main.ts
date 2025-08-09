@@ -78,9 +78,10 @@ export interface GeoGridOptions {
      * A function to format the grid labels.
      * By default, formats the labels as "[degrees]° [minutes]` [seconds]``".
      * @param degreesFloat A floating-point number representing degrees.
+     * @param isLongitude A boolean indicating whether the label is a longitude label.
      * @returns A formatted label string.
      */
-    formatLabels?: (degreesFloat: number) => string
+    formatLabels?: (degreesFloat: number, ) => string
 }
 
 /**

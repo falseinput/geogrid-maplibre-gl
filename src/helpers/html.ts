@@ -16,7 +16,7 @@ export const createLabelElement = (
     x: number,
     y: number, 
     align: 'left' | 'right' | 'top' | 'bottom',
-    format: (degress: number) => string,
+    format: (degress: number, isLongitude: boolean) => string,
     labelStyle: LabelStyle
 ) => {
     const alignTopOrBottom = align === 'top' || align === 'bottom';
@@ -36,7 +36,7 @@ export const createLabelElement = (
         el.style.textShadow = labelStyle.textShadow;
     }
 
-    el.innerText = format(value);
+    el.innerText = format(value, alignTopOrBottom);
     el.setAttribute(alignTopOrBottom ? 'longitude' : 'latitude', value.toFixed(20));
     el.style.position = 'absolute';
     el.style[alignTopOrBottom ? 'left' : align ] = `${x.toString()}px`;
